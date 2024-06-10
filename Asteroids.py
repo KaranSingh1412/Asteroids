@@ -4,6 +4,8 @@ import math
 import random
 pygame.init()
 
+# test test test
+
 # Initialize constants
 white = (255, 255, 255)
 red = (255, 0, 0)
