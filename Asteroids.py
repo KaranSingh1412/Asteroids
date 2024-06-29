@@ -10,8 +10,6 @@ from saucer import Saucer
 
 pygame.init()
 
-# test test test
-
 # Initialize constants
 white = (255, 255, 255)
 red = (255, 0, 0)
@@ -55,15 +53,39 @@ def drawText(msg, color, x, y, s, center=True):
     gameDisplay.blit(screen_text, rect)
 
 
-# Create funtion to chek for collision
+# Create function to check for collision
 def isColliding(x, y, xTo, yTo, size):
     if x > xTo - size and x < xTo + size and y > yTo - size and y < yTo + size:
         return True
     return False
 
+def draw_pause_menu(score):
+    gameDisplay.fill(black)
+
+    # Draw the buttons
+    button_width = 200
+    button_height = 50
+    button_y_start = display_height / 2 - 1.5 * button_height
+    buttons = []
+    for i, button_text in enumerate(["Resume (esc)", "Retry (r)", "Quit (q)"]):
+        button_x = display_width / 2 - button_width / 2
+        button_y = button_y_start + i * (button_height + 10)
+        button_rect = pygame.Rect(button_x, button_y, button_width, button_height)
+        pygame.draw.rect(gameDisplay, white, button_rect, 2)
+        drawText(button_text, white, display_width / 2, button_y + button_height / 2, 30)
+        buttons.append({"text": button_text, "rect": button_rect})
+
+    # Draw the current score
+    drawText("Current Score: " + str(score), white, display_width / 2, button_y_start - 50, 30)
+
+    return buttons
+
 def gameLoop(startingState):
     # Init variables
     gameState = startingState
+    gameState = "Paused"
+    gameState = "Playing"
+    gameState = "Menu"
     player_state = "Alive"
     player_blink = 0
     player_pieces = []
@@ -72,6 +94,7 @@ def gameLoop(startingState):
     hyperspace = 0
     next_level_delay = 0
     bullet_capacity = 4
+    buttons = []  # Define buttons variable here
     bullets = []
     asteroids = []
     stage = 3
@@ -103,6 +126,19 @@ def gameLoop(startingState):
             if event.type == pygame.QUIT:
                 gameState = "Exit"
             if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE or event.key == pygame.K_p:
+                    if gameState == "Playing":
+                        gameState = "Paused"
+                    elif gameState == "Paused":
+                        gameState = "Playing"
+                elif gameState == "Paused":
+                    if event.key == pygame.K_r:
+                        gameState = "Exit"
+                        gameLoop("Playing")
+                    elif event.key == pygame.K_q:
+                        gameState = "Exit"
+                        pygame.quit()
+                        quit()
                 if event.key == pygame.K_UP:
                     player.thrust = True
                 if event.key == pygame.K_LEFT:
@@ -137,6 +173,22 @@ def gameLoop(startingState):
         # Reset display
         gameDisplay.fill(black)
 
+        # Draw pause menu if game is paused
+        if gameState == "Paused":
+            draw_pause_menu(score)
+            pygame.display.update()
+            timer.tick(5)
+            continue  # Skip the rest of the loop
+
+        # If game is over, display game over menu and highscore
+        elif gameState == "Game Over":
+            drawText("High Score: " + str(score), white, display_width / 2, display_height / 2 - 150, 50)
+            drawText("Game Over", white, display_width / 2, display_height / 2 - 50, 100)
+            drawText("Press \"R\" to restart!", white, display_width / 2, display_height / 2 + 50, 50)
+            pygame.display.update()
+            timer.tick(5)
+            continue  # Skip the rest of the loop
+
         # Hyperspace
         if hyperspace != 0:
             player_state = "Died"
@@ -151,9 +203,9 @@ def gameLoop(startingState):
             if player_state != "Died":
                 if isColliding(player.x, player.y, a.x, a.y, a.size):
                     # Create ship fragments
-                    player_pieces.append(deadPlayer(player.x, player.y, 5 * player_size / (2 * math.cos(math.atan(1 / 3)))))
-                    player_pieces.append(deadPlayer(player.x, player.y, 5 * player_size / (2 * math.cos(math.atan(1 / 3)))))
-                    player_pieces.append(deadPlayer(player.x, player.y, player_size))
+                    player_pieces.append(DeadPlayer(player.x, player.y, 5 * player_size / (2 * math.cos(math.atan(1 / 3))), gameDisplay))
+                    player_pieces.append(DeadPlayer(player.x, player.y, 5 * player_size / (2 * math.cos(math.atan(1 / 3))), gameDisplay))
+                    player_pieces.append(DeadPlayer(player.x, player.y, player_size))
 
                     # Kill player
                     player_state = "Died"
@@ -271,9 +323,9 @@ def gameLoop(startingState):
             if isColliding(saucer.x, saucer.y, player.x, player.y, saucer.size):
                 if player_state != "Died":
                     # Create ship fragments
-                    player_pieces.append(deadPlayer(player.x, player.y, 5 * player_size / (2 * math.cos(math.atan(1 / 3)))))
-                    player_pieces.append(deadPlayer(player.x, player.y, 5 * player_size / (2 * math.cos(math.atan(1 / 3)))))
-                    player_pieces.append(deadPlayer(player.x, player.y, player_size))
+                    player_pieces.append(DeadPlayer(player.x, player.y, 5 * player_size / (2 * math.cos(math.atan(1 / 3)))))
+                    player_pieces.append(DeadPlayer(player.x, player.y, 5 * player_size / (2 * math.cos(math.atan(1 / 3)))))
+                    player_pieces.append(DeadPlayer(player.x, player.y, player_size))
 
                     # Kill player
                     player_state = "Died"
@@ -322,9 +374,9 @@ def gameLoop(startingState):
                 if isColliding(player.x, player.y, b.x, b.y, 5):
                     if player_state != "Died":
                         # Create ship fragments
-                        player_pieces.append(deadPlayer(player.x, player.y, 5 * player_size / (2 * math.cos(math.atan(1 / 3)))))
-                        player_pieces.append(deadPlayer(player.x, player.y, 5 * player_size / (2 * math.cos(math.atan(1 / 3)))))
-                        player_pieces.append(deadPlayer(player.x, player.y, player_size))
+                        player_pieces.append(DeadPlayer(player.x, player.y, 5 * player_size / (2 * math.cos(math.atan(1 / 3)))))
+                        player_pieces.append(DeadPlayer(player.x, player.y, 5 * player_size / (2 * math.cos(math.atan(1 / 3)))))
+                        player_pieces.append(DeadPlayer(player.x, player.y, player_size))
 
                         # Kill player
                         player_state = "Died"
@@ -411,10 +463,6 @@ def gameLoop(startingState):
                         player_dying_delay -= 1
             else:
                 player.drawPlayer()
-        else:
-            drawText("Game Over", white, display_width / 2, display_height / 2, 100)
-            drawText("Press \"R\" to restart!", white, display_width / 2, display_height / 2 + 100, 50)
-            live = -1
 
         # Draw score
         drawText(str(score), white, 60, 20, 40, False)
