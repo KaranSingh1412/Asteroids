@@ -1,6 +1,9 @@
+import math
+import pygame
+
 # Class player
 class Player:
-    def __init__(self, x, y):
+    def __init__(self, x, y, gameDisplay, display_width, display_height, player_size):
         self.x = x
         self.y = y
         self.hspeed = 0
@@ -8,21 +11,30 @@ class Player:
         self.dir = -90
         self.rtspd = 0
         self.thrust = False
+        self.gameDisplay = gameDisplay
+        self.display_width = display_width
+        self.display_height = display_height
+        self.fd_fric = 0.5
+        self.bd_fric = 0.1
+        self.player_max_speed = 20
+        self.player_size = player_size
+        self.white = (255, 255, 255)
+
 
     def updatePlayer(self):
         # Move player
         speed = math.sqrt(self.hspeed**2 + self.vspeed**2)
         if self.thrust:
-            if speed + fd_fric < player_max_speed:
-                self.hspeed += fd_fric * math.cos(self.dir * math.pi / 180)
-                self.vspeed += fd_fric * math.sin(self.dir * math.pi / 180)
+            if speed + self.fd_fric < self.player_max_speed:
+                self.hspeed += self.fd_fric * math.cos(self.dir * math.pi / 180)
+                self.vspeed += self.fd_fric * math.sin(self.dir * math.pi / 180)
             else:
-                self.hspeed = player_max_speed * math.cos(self.dir * math.pi / 180)
-                self.vspeed = player_max_speed * math.sin(self.dir * math.pi / 180)
+                self.hspeed = self.player_max_speed * math.cos(self.dir * math.pi / 180)
+                self.vspeed = self.player_max_speed * math.sin(self.dir * math.pi / 180)
         else:
-            if speed - bd_fric > 0:
-                change_in_hspeed = (bd_fric * math.cos(self.vspeed / self.hspeed))
-                change_in_vspeed = (bd_fric * math.sin(self.vspeed / self.hspeed))
+            if speed - self.bd_fric > 0:
+                change_in_hspeed = (self.bd_fric * math.cos(self.vspeed / self.hspeed))
+                change_in_vspeed = (self.bd_fric * math.sin(self.vspeed / self.hspeed))
                 if self.hspeed != 0:
                     if change_in_hspeed / abs(change_in_hspeed) == self.hspeed / abs(self.hspeed):
                         self.hspeed -= change_in_hspeed
@@ -40,14 +52,14 @@ class Player:
         self.y += self.vspeed
 
         # Check for wrapping
-        if self.x > display_width:
+        if self.x > self.display_width:
             self.x = 0
         elif self.x < 0:
-            self.x = display_width
-        elif self.y > display_height:
+            self.x = self.display_width
+        elif self.y > self.display_height:
             self.y = 0
         elif self.y < 0:
-            self.y = display_height
+            self.y = self.display_height
 
         # Rotate player
         self.dir += self.rtspd
@@ -56,31 +68,31 @@ class Player:
         a = math.radians(self.dir)
         x = self.x
         y = self.y
-        s = player_size
+        s = self.player_size
         t = self.thrust
         # Draw player
-        pygame.draw.line(gameDisplay, white,
+        pygame.draw.line(self.gameDisplay, self.white,
                          (x - (s * math.sqrt(130) / 12) * math.cos(math.atan(7 / 9) + a),
                           y - (s * math.sqrt(130) / 12) * math.sin(math.atan(7 / 9) + a)),
                          (x + s * math.cos(a), y + s * math.sin(a)))
 
-        pygame.draw.line(gameDisplay, white,
+        pygame.draw.line(self.gameDisplay, self.white,
                          (x - (s * math.sqrt(130) / 12) * math.cos(math.atan(7 / 9) - a),
                           y + (s * math.sqrt(130) / 12) * math.sin(math.atan(7 / 9) - a)),
                          (x + s * math.cos(a), y + s * math.sin(a)))
 
-        pygame.draw.line(gameDisplay, white,
+        pygame.draw.line(self.gameDisplay, self.white,
                          (x - (s * math.sqrt(2) / 2) * math.cos(a + math.pi / 4),
                           y - (s * math.sqrt(2) / 2) * math.sin(a + math.pi / 4)),
                          (x - (s * math.sqrt(2) / 2) * math.cos(-a + math.pi / 4),
                           y + (s * math.sqrt(2) / 2) * math.sin(-a + math.pi / 4)))
         if t:
-            pygame.draw.line(gameDisplay, white,
+            pygame.draw.line(self.gameDisplay, self.white,
                              (x - s * math.cos(a),
                               y - s * math.sin(a)),
                              (x - (s * math.sqrt(5) / 4) * math.cos(a + math.pi / 6),
                               y - (s * math.sqrt(5) / 4) * math.sin(a + math.pi / 6)))
-            pygame.draw.line(gameDisplay, white,
+            pygame.draw.line(self.gameDisplay, self.white,
                              (x - s * math.cos(-a),
                               y + s * math.sin(-a)),
                              (x - (s * math.sqrt(5) / 4) * math.cos(-a + math.pi / 6),
@@ -88,8 +100,8 @@ class Player:
 
     def killPlayer(self):
         # Reset the player
-        self.x = display_width / 2
-        self.y = display_height / 2
+        self.x = self.display_width / 2
+        self.y = self.display_height / 2
         self.thrust = False
         self.dir = -90
         self.hspeed = 0

@@ -1,6 +1,10 @@
+import random
+import math
+import pygame
+
 # Create class asteroid
 class Asteroid:
-    def __init__(self, x, y, t):
+    def __init__(self, x, y, t, gameDisplay, display_width, display_height):
         self.x = x
         self.y = y
         if t == "Large":
@@ -10,6 +14,10 @@ class Asteroid:
         else:
             self.size = 10
         self.t = t
+        self.gameDisplay = gameDisplay
+        self.white = (255, 255, 255)
+        self.display_width = display_width
+        self.display_height = display_height
 
         # Make random speed and direction
         self.speed = random.uniform(1, (40 - self.size) * 4 / 15)
@@ -30,14 +38,14 @@ class Asteroid:
         self.y += self.speed * math.sin(self.dir)
 
         # Check for wrapping
-        if self.x > display_width:
+        if self.x > self.display_width:
             self.x = 0
         elif self.x < 0:
-            self.x = display_width
-        elif self.y > display_height:
+            self.x = self.display_width
+        elif self.y > self.display_height:
             self.y = 0
         elif self.y < 0:
-            self.y = display_height
+            self.y = self.display_height
 
         # Draw asteroid
         for v in range(len(self.vertices)):
@@ -46,7 +54,7 @@ class Asteroid:
             else:
                 next_v = self.vertices[v + 1]
             this_v = self.vertices[v]
-            pygame.draw.line(gameDisplay, white, (self.x + this_v[0] * math.cos(this_v[1] * math.pi / 180),
+            pygame.draw.line(self.gameDisplay, self.white, (self.x + this_v[0] * math.cos(this_v[1] * math.pi / 180),
                                                   self.y + this_v[0] * math.sin(this_v[1] * math.pi / 180)),
                              (self.x + next_v[0] * math.cos(next_v[1] * math.pi / 180),
                               self.y + next_v[0] * math.sin(next_v[1] * math.pi / 180)))

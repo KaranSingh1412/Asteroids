@@ -19,12 +19,8 @@ display_width = 800
 display_height = 600
 
 player_size = 10
-fd_fric = 0.5
-bd_fric = 0.1
-player_max_speed = 20
 player_max_rtspd = 10
-bullet_speed = 15
-saucer_speed = 5
+
 small_saucer_accuracy = 10
 
 # Make surface and display
@@ -38,8 +34,6 @@ snd_bangL = pygame.mixer.Sound("Sounds/bangLarge.wav")
 snd_bangM = pygame.mixer.Sound("Sounds/bangMedium.wav")
 snd_bangS = pygame.mixer.Sound("Sounds/bangSmall.wav")
 snd_extra = pygame.mixer.Sound("Sounds/extra.wav")
-snd_saucerB = pygame.mixer.Sound("Sounds/saucerBig.wav")
-snd_saucerS = pygame.mixer.Sound("Sounds/saucerSmall.wav")
 
 
 # Create function to draw texts
@@ -83,9 +77,6 @@ def draw_pause_menu(score):
 def gameLoop(startingState):
     # Init variables
     gameState = startingState
-    gameState = "Paused"
-    gameState = "Playing"
-    gameState = "Menu"
     player_state = "Alive"
     player_blink = 0
     player_pieces = []
@@ -103,8 +94,8 @@ def gameLoop(startingState):
     oneUp_multiplier = 1
     playOneUpSFX = 0
     intensity = 0
-    player = Player(display_width / 2, display_height / 2)
-    saucer = Saucer()
+    player = Player(display_width / 2, display_height / 2, gameDisplay, display_width, display_height, player_size)
+    saucer = Saucer(display_width, display_height, gameDisplay)
 
     # Main loop
     while gameState != "Exit":
@@ -146,7 +137,7 @@ def gameLoop(startingState):
                 if event.key == pygame.K_RIGHT:
                     player.rtspd = player_max_rtspd
                 if event.key == pygame.K_SPACE and player_dying_delay == 0 and len(bullets) < bullet_capacity:
-                    bullets.append(Bullet(player.x, player.y, player.dir))
+                    bullets.append(Bullet(player.x, player.y, player.dir, gameDisplay, display_width, display_height))
                     # Play SFX
                     pygame.mixer.Sound.play(snd_fire)
                 if gameState == "Game Over":
@@ -205,7 +196,7 @@ def gameLoop(startingState):
                     # Create ship fragments
                     player_pieces.append(DeadPlayer(player.x, player.y, 5 * player_size / (2 * math.cos(math.atan(1 / 3))), gameDisplay))
                     player_pieces.append(DeadPlayer(player.x, player.y, 5 * player_size / (2 * math.cos(math.atan(1 / 3))), gameDisplay))
-                    player_pieces.append(DeadPlayer(player.x, player.y, player_size))
+                    player_pieces.append(DeadPlayer(player.x, player.y, player_size, gameDisplay))
 
                     # Kill player
                     player_state = "Died"
@@ -220,14 +211,14 @@ def gameLoop(startingState):
 
                     # Split asteroid
                     if a.t == "Large":
-                        asteroids.append(Asteroid(a.x, a.y, "Normal"))
-                        asteroids.append(Asteroid(a.x, a.y, "Normal"))
+                        asteroids.append(Asteroid(a.x, a.y, "Normal", gameDisplay, display_width, display_height))
+                        asteroids.append(Asteroid(a.x, a.y, "Normal", gameDisplay, display_width, display_height))
                         score += 20
                         # Play SFX
                         pygame.mixer.Sound.play(snd_bangL)
                     elif a.t == "Normal":
-                        asteroids.append(Asteroid(a.x, a.y, "Small"))
-                        asteroids.append(Asteroid(a.x, a.y, "Small"))
+                        asteroids.append(Asteroid(a.x, a.y, "Small", gameDisplay, display_width, display_height))
+                        asteroids.append(Asteroid(a.x, a.y, "Small", gameDisplay, display_width, display_height))
                         score += 50
                         # Play SFX
                         pygame.mixer.Sound.play(snd_bangM)
@@ -257,7 +248,7 @@ def gameLoop(startingState):
                     while xTo - display_width / 2 < display_width / 4 and yTo - display_height / 2 < display_height / 4:
                         xTo = random.randrange(0, display_width)
                         yTo = random.randrange(0, display_height)
-                    asteroids.append(Asteroid(xTo, yTo, "Large"))
+                    asteroids.append(Asteroid(xTo, yTo, "Large", gameDisplay, display_width, display_height))
                 next_level_delay = 0
 
         # Update intensity
@@ -287,13 +278,13 @@ def gameLoop(startingState):
 
                     # Split asteroid
                     if a.t == "Large":
-                        asteroids.append(Asteroid(a.x, a.y, "Normal"))
-                        asteroids.append(Asteroid(a.x, a.y, "Normal"))
+                        asteroids.append(Asteroid(a.x, a.y, "Normal", gameDisplay, display_width, display_height))
+                        asteroids.append(Asteroid(a.x, a.y, "Normal", gameDisplay, display_width, display_height))
                         # Play SFX
                         pygame.mixer.Sound.play(snd_bangL)
                     elif a.t == "Normal":
-                        asteroids.append(Asteroid(a.x, a.y, "Small"))
-                        asteroids.append(Asteroid(a.x, a.y, "Small"))
+                        asteroids.append(Asteroid(a.x, a.y, "Small", gameDisplay, display_width, display_height))
+                        asteroids.append(Asteroid(a.x, a.y, "Small", gameDisplay, display_width, display_height))
                         # Play SFX
                         pygame.mixer.Sound.play(snd_bangM)
                     else:
@@ -323,9 +314,9 @@ def gameLoop(startingState):
             if isColliding(saucer.x, saucer.y, player.x, player.y, saucer.size):
                 if player_state != "Died":
                     # Create ship fragments
-                    player_pieces.append(DeadPlayer(player.x, player.y, 5 * player_size / (2 * math.cos(math.atan(1 / 3)))))
-                    player_pieces.append(DeadPlayer(player.x, player.y, 5 * player_size / (2 * math.cos(math.atan(1 / 3)))))
-                    player_pieces.append(DeadPlayer(player.x, player.y, player_size))
+                    player_pieces.append(DeadPlayer(player.x, player.y, 5 * player_size / (2 * math.cos(math.atan(1 / 3))), gameDisplay))
+                    player_pieces.append(DeadPlayer(player.x, player.y, 5 * player_size / (2 * math.cos(math.atan(1 / 3))), gameDisplay))
+                    player_pieces.append(DeadPlayer(player.x, player.y, player_size, gameDisplay))
 
                     # Kill player
                     player_state = "Died"
@@ -351,13 +342,13 @@ def gameLoop(startingState):
                     if isColliding(b.x, b.y, a.x, a.y, a.size):
                         # Split asteroid
                         if a.t == "Large":
-                            asteroids.append(Asteroid(a.x, a.y, "Normal"))
-                            asteroids.append(Asteroid(a.x, a.y, "Normal"))
+                            asteroids.append(Asteroid(a.x, a.y, "Normal", gameDisplay, display_width, display_height))
+                            asteroids.append(Asteroid(a.x, a.y, "Normal", gameDisplay, display_width, display_height))
                             # Play SFX
                             pygame.mixer.Sound.play(snd_bangL)
                         elif a.t == "Normal":
-                            asteroids.append(Asteroid(a.x, a.y, "Small"))
-                            asteroids.append(Asteroid(a.x, a.y, "Small"))
+                            asteroids.append(Asteroid(a.x, a.y, "Small", gameDisplay, display_width, display_height))
+                            asteroids.append(Asteroid(a.x, a.y, "Small", gameDisplay, display_width, display_height))
                             # Play SFX
                             pygame.mixer.Sound.play(snd_bangL)
                         else:
@@ -374,9 +365,9 @@ def gameLoop(startingState):
                 if isColliding(player.x, player.y, b.x, b.y, 5):
                     if player_state != "Died":
                         # Create ship fragments
-                        player_pieces.append(DeadPlayer(player.x, player.y, 5 * player_size / (2 * math.cos(math.atan(1 / 3)))))
-                        player_pieces.append(DeadPlayer(player.x, player.y, 5 * player_size / (2 * math.cos(math.atan(1 / 3)))))
-                        player_pieces.append(DeadPlayer(player.x, player.y, player_size))
+                        player_pieces.append(DeadPlayer(player.x, player.y, 5 * player_size / (2 * math.cos(math.atan(1 / 3))), gameDisplay))
+                        player_pieces.append(DeadPlayer(player.x, player.y, 5 * player_size / (2 * math.cos(math.atan(1 / 3))), gameDisplay))
+                        player_pieces.append(DeadPlayer(player.x, player.y, player_size, gameDisplay))
 
                         # Kill player
                         player_state = "Died"
@@ -411,14 +402,14 @@ def gameLoop(startingState):
                 if b.x > a.x - a.size and b.x < a.x + a.size and b.y > a.y - a.size and b.y < a.y + a.size:
                     # Split asteroid
                     if a.t == "Large":
-                        asteroids.append(Asteroid(a.x, a.y, "Normal"))
-                        asteroids.append(Asteroid(a.x, a.y, "Normal"))
+                        asteroids.append(Asteroid(a.x, a.y, "Normal", gameDisplay, display_width, display_height))
+                        asteroids.append(Asteroid(a.x, a.y, "Normal", gameDisplay, display_width, display_height))
                         score += 20
                         # Play SFX
                         pygame.mixer.Sound.play(snd_bangL)
                     elif a.t == "Normal":
-                        asteroids.append(Asteroid(a.x, a.y, "Small"))
-                        asteroids.append(Asteroid(a.x, a.y, "Small"))
+                        asteroids.append(Asteroid(a.x, a.y, "Small", gameDisplay, display_width, display_height))
+                        asteroids.append(Asteroid(a.x, a.y, "Small", gameDisplay, display_width, display_height))
                         score += 50
                         # Play SFX
                         pygame.mixer.Sound.play(snd_bangM)
@@ -469,7 +460,7 @@ def gameLoop(startingState):
 
         # Draw Lives
         for l in range(live + 1):
-            Player(75 + l * 25, 75).drawPlayer()
+            Player(75 + l * 25, 75, gameDisplay, display_width, display_height, player_size).drawPlayer()
 
         # Update screen
         pygame.display.update()
