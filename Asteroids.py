@@ -7,6 +7,7 @@ from bullet import Bullet
 from deadplayer import DeadPlayer
 from player import Player
 from saucer import Saucer
+import power_ups
 
 pygame.init()
 
@@ -85,9 +86,10 @@ def gameLoop(startingState):
     hyperspace = 0
     next_level_delay = 0
     bullet_capacity = 4
-    buttons = []  # Define buttons variable here
     bullets = []
     asteroids = []
+    powerups = []
+    active_powerups = []
     stage = 3
     score = 0
     live = 2
@@ -188,6 +190,26 @@ def gameLoop(startingState):
                 player.x = random.randrange(0, display_width)
                 player.y = random.randrange(0, display_height)
 
+        for power_up in powerups:
+            power_up.draw(gameDisplay)
+            if power_up.collides_with_player(player):  # Übergeben Sie das 'player'-Objekt
+                if not power_up.is_activated:  # Überprüfen Sie, ob das Power-Up bereits aktiviert wurde
+                    power_up.activate()  # Aktivieren Sie das Power-Up
+                    active_powerups.append(power_up)  # Fügen Sie das Power-Up zur Liste der aktiven Power-Ups hinzu
+                    print(active_powerups)
+                    powerups.remove(power_up)  # Entfernen Sie das Power-Up aus der Liste
+        for power_up in active_powerups.copy():  # Verwenden Sie .copy() um über eine Kopie der Liste zu iterieren
+            power_up.update()  # Aktualisieren Sie den Zustand des Power-Ups
+
+            # Überprüfen Sie, ob das Power-Up noch aktiv ist
+            if not power_up.active:
+                # Wenn das Power-Up nicht mehr aktiv ist, entfernen Sie es aus der Liste
+                active_powerups.remove(power_up)
+            elif isinstance(power_up, power_ups.Shield):
+                # Wenn das Schild aktiv ist, zeichnen Sie eine  Umrandung um den Spieler
+                pygame.draw.circle(gameDisplay, (173, 216, 250), (int(player.x), int(player.y)), player_size + 10, 2)
+
+        
         # Check for collision w/ asteroid
         for a in asteroids:
             a.updateAsteroid()
@@ -298,11 +320,19 @@ def gameLoop(startingState):
                     # Add points
                     if saucer.type == "Large":
                         score += 200
+                        
                     else:
                         score += 1000
 
                     # Set saucer state
                     saucer.state = "Dead"
+                    
+                    # Wählen Sie zufällig ein Power-Up aus
+                    power_up_type = random.choice(['Shield'])  # Wählen Sie zufällig ein Power-Up aus
+
+                    if power_up_type == 'Shield':
+                        new_power_up = power_ups.Shield(saucer.x, saucer.y, 'Assets/Powerups/Shield.png')
+                        powerups.append(new_power_up)
 
                     # Play SFX
                     pygame.mixer.Sound.play(snd_bangL)

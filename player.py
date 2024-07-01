@@ -11,6 +11,7 @@ class Player:
         self.dir = -90
         self.rtspd = 0
         self.thrust = False
+        self.radius = 5
         self.gameDisplay = gameDisplay
         self.display_width = display_width
         self.display_height = display_height
