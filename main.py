@@ -12,6 +12,8 @@ import power_ups
 pygame.init()
 # game music mixer
 pygame.mixer.init()
+clock = pygame.time.Clock()
+
 
 # Initialize constants
 white = (255, 255, 255)
@@ -28,6 +30,7 @@ small_saucer_accuracy = 10
 
 # Make surface and display
 gameDisplay = pygame.display.set_mode((display_width, display_height))
+pygame.display.set_mode((display_width, display_height), pygame.DOUBLEBUF)
 pygame.display.set_caption("Asteroids")
 timer = pygame.time.Clock()
 
@@ -41,6 +44,29 @@ menu_music = pygame.mixer.Sound("Music/1.IntoTheSpaceship.wav")
 
 # Import Background Image Menu
 background_image = pygame.image.load('Assets/backgrounds/1920-space-wallpaper-banner-background-stunning-view-of-a-cosmic-galaxy-with-planets-and-space-objects-elements-of-this-image-furnished-by-nasa-generate-ai.jpg')
+background_x = 0
+background_y = 0
+scroll_speed = 1  # Adjust this value to change the scrolling speed
+scroll_direction = 1  # 1 for right to left, -1 for left to right
+
+def update_scrolling_background():
+    global background_x, background_y, scroll_direction
+    
+    # Update the background position
+    background_x -= scroll_speed * scroll_direction
+    
+    # Check if we've reached either end
+    if background_x <= -background_image.get_width() + display_width:
+        # Reached the left end, reverse direction
+        scroll_direction = -1
+        background_x = -background_image.get_width() + display_width
+    elif background_x >= 0:
+        # Reached the right end, reverse direction
+        scroll_direction = 1
+        background_x = 0
+    
+    # Draw the background
+    gameDisplay.blit(background_image, (int(background_x), int(background_y)))
 
 # Create function to draw texts
 def drawText(msg, color, x, y, s, center=True):
@@ -67,8 +93,7 @@ def isColliding(x, y, xTo, yTo, size):
     return False
 
 def draw_pause_menu(score):
-    gameDisplay.blit(background_image, (0, 0))
-
+    update_scrolling_background()
     # Draw the buttons
     button_width = 200
     button_height = 50
@@ -116,7 +141,7 @@ def gameLoop(startingState):
         handle_menu_music(gameState)    
         # Game menu
         while gameState == "Menu":
-            gameDisplay.fill(black)
+            update_scrolling_background()
             drawText("ASTEROIDS", white, display_width / 2, display_height / 2, 100)
             drawText("Press any key to START", white, display_width / 2, display_height / 2 + 100, 50)
             for event in pygame.event.get():
@@ -194,6 +219,7 @@ def gameLoop(startingState):
 
         # If game is over, display game over menu and highscore
         elif gameState == "Game Over":
+            update_scrolling_background()
             handle_menu_music(gameState)
             drawText("High Score: " + str(score), white, display_width / 2, display_height / 2 - 150, 50)
             drawText("Game Over", white, display_width / 2, display_height / 2 - 50, 100)
@@ -516,7 +542,7 @@ def gameLoop(startingState):
         pygame.display.update()
 
         # Tick fps
-        timer.tick(30)
+        clock.tick(30)
 
 
 # Start game
