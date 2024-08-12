@@ -10,14 +10,16 @@ from saucer import Saucer
 import power_ups
 
 pygame.init()
+# game music mixer
+pygame.mixer.init()
 
 # Initialize constants
 white = (255, 255, 255)
 red = (255, 0, 0)
 black = (0, 0, 0)
 
-display_width = 800
-display_height = 600
+display_width = 1000
+display_height = 800
 
 player_size = 10
 player_max_rtspd = 10
@@ -29,13 +31,16 @@ gameDisplay = pygame.display.set_mode((display_width, display_height))
 pygame.display.set_caption("Asteroids")
 timer = pygame.time.Clock()
 
-# Import sound effects
+# Import sound effects and music
 snd_fire = pygame.mixer.Sound("Sounds/fire.wav")
 snd_bangL = pygame.mixer.Sound("Sounds/bangLarge.wav")
 snd_bangM = pygame.mixer.Sound("Sounds/bangMedium.wav")
 snd_bangS = pygame.mixer.Sound("Sounds/bangSmall.wav")
 snd_extra = pygame.mixer.Sound("Sounds/extra.wav")
+menu_music = pygame.mixer.Sound("Music/1.IntoTheSpaceship.wav")
 
+# Import Background Image Menu
+background_image = pygame.image.load('Assets/backgrounds/1920-space-wallpaper-banner-background-stunning-view-of-a-cosmic-galaxy-with-planets-and-space-objects-elements-of-this-image-furnished-by-nasa-generate-ai.jpg')
 
 # Create function to draw texts
 def drawText(msg, color, x, y, s, center=True):
@@ -47,6 +52,13 @@ def drawText(msg, color, x, y, s, center=True):
         rect = (x, y)
     gameDisplay.blit(screen_text, rect)
 
+# Create a function to handle playing and stopping the music
+def handle_menu_music(gameState):
+    if gameState in ["Menu", "Paused", "Game Over"]:
+        if not pygame.mixer.get_busy():
+            menu_music.play(-1)  # -1 means loop indefinitely
+    else:
+        menu_music.stop()
 
 # Create function to check for collision
 def isColliding(x, y, xTo, yTo, size):
@@ -55,7 +67,7 @@ def isColliding(x, y, xTo, yTo, size):
     return False
 
 def draw_pause_menu(score):
-    gameDisplay.fill(black)
+    gameDisplay.blit(background_image, (0, 0))
 
     # Draw the buttons
     button_width = 200
@@ -101,6 +113,7 @@ def gameLoop(startingState):
 
     # Main loop
     while gameState != "Exit":
+        handle_menu_music(gameState)    
         # Game menu
         while gameState == "Menu":
             gameDisplay.fill(black)
@@ -111,6 +124,9 @@ def gameLoop(startingState):
                     gameState = "Exit"
                 if event.type == pygame.KEYDOWN:
                     gameState = "Playing"
+                    # stop menu music
+                    handle_menu_music(gameState)
+
             pygame.display.update()
             timer.tick(5)
 
@@ -124,6 +140,9 @@ def gameLoop(startingState):
                         gameState = "Paused"
                     elif gameState == "Paused":
                         gameState = "Playing"
+                    # start menu music
+                    handle_menu_music(gameState)
+
                 elif gameState == "Paused":
                     if event.key == pygame.K_r:
                         gameState = "Exit"
@@ -175,6 +194,7 @@ def gameLoop(startingState):
 
         # If game is over, display game over menu and highscore
         elif gameState == "Game Over":
+            handle_menu_music(gameState)
             drawText("High Score: " + str(score), white, display_width / 2, display_height / 2 - 150, 50)
             drawText("Game Over", white, display_width / 2, display_height / 2 - 50, 100)
             drawText("Press \"R\" to restart!", white, display_width / 2, display_height / 2 + 50, 50)
