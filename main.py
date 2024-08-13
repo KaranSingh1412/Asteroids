@@ -1,4 +1,5 @@
 # Import modules
+import os
 import pygame
 import math
 import random
@@ -20,7 +21,7 @@ white = (255, 255, 255)
 red = (255, 0, 0)
 black = (0, 0, 0)
 
-display_width = 1000
+display_width = 1200
 display_height = 800
 
 player_size = 10
@@ -34,6 +35,22 @@ pygame.display.set_mode((display_width, display_height), pygame.DOUBLEBUF)
 pygame.display.set_caption("Asteroids")
 timer = pygame.time.Clock()
 
+def read_high_score():
+    if os.path.exists("highscore.txt"):
+        with open("highscore.txt", "r") as file:
+            return int(file.read())
+    return 0
+
+def write_high_score(score):
+    with open("highscore.txt", "w") as file:
+        file.write(str(score))
+
+def reset_high_score():
+    if os.path.exists("highscore.txt"):
+        os.remove("highscore.txt")
+    else:
+        write_high_score(0)
+                   
 # Import sound effects and music
 snd_fire = pygame.mixer.Sound("Sounds/fire.wav")
 snd_bangL = pygame.mixer.Sound("Sounds/bangLarge.wav")
@@ -95,10 +112,10 @@ def isColliding(x, y, xTo, yTo, size):
 def draw_pause_menu(score):
     update_scrolling_background()
     # Draw the buttons
+    buttons = []
     button_width = 200
     button_height = 50
     button_y_start = display_height / 2 - 1.5 * button_height
-    buttons = []
     for i, button_text in enumerate(["Resume (esc)", "Retry (r)", "Quit (q)"]):
         button_x = display_width / 2 - button_width / 2
         button_y = button_y_start + i * (button_height + 10)
@@ -111,6 +128,37 @@ def draw_pause_menu(score):
     drawText("Current Score: " + str(score), white, display_width / 2, button_y_start - 50, 30)
 
     return buttons
+
+def draw_game_over_menu(score, high_score):
+    update_scrolling_background()
+    buttons = []
+    button_width = 200
+    button_height = 50
+    button_y_start = display_height / 2 + 100
+
+    drawText(f"High Score: {high_score}", white, display_width / 2, display_height / 2 - 180, 50)
+    drawText(f"Your Score: {score}", white, display_width / 2, display_height / 2 - 120, 50)
+    drawText("Game Over", white, display_width / 2, display_height / 2 - 50, 100)
+
+    button_text = "Retry (r)"
+    button_x = display_width / 2 - button_width / 2
+    button_y = button_y_start
+    button_rect = pygame.Rect(button_x, button_y, button_width, button_height)
+    pygame.draw.rect(gameDisplay, white, button_rect, 2)
+    drawText(button_text, white, display_width / 2, button_y + button_height / 2, 30)
+    buttons.append({"text": button_text, "rect": button_rect})
+
+    return buttons
+
+def handle_button_click(button_text):
+    if button_text == "Resume (esc)":
+        return "Playing"
+    elif button_text == "Retry (r)":
+        return "Restart"
+    elif button_text == "Quit (q)":
+        reset_high_score()  # Reset high score when quitting via button
+        return "Exit"
+    return None
 
 def gameLoop(startingState):
     # Init variables
@@ -135,6 +183,7 @@ def gameLoop(startingState):
     intensity = 0
     player = Player(display_width / 2, display_height / 2, gameDisplay, display_width, display_height, player_size)
     saucer = Saucer(display_width, display_height, gameDisplay)
+    high_score = read_high_score()
 
     # Main loop
     while gameState != "Exit":
@@ -146,6 +195,7 @@ def gameLoop(startingState):
             drawText("Press any key to START", white, display_width / 2, display_height / 2 + 100, 50)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
+                    reset_high_score()  # Reset high score when closing the window
                     gameState = "Exit"
                 if event.type == pygame.KEYDOWN:
                     gameState = "Playing"
@@ -155,9 +205,15 @@ def gameLoop(startingState):
             pygame.display.update()
             timer.tick(5)
 
+        # highscore checker
+        if score > high_score:
+            high_score = score
+            write_high_score(high_score)
+
         # User inputs
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
+                reset_high_score()  # Reset high score when exiting the game
                 gameState = "Exit"
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE or event.key == pygame.K_p:
@@ -174,6 +230,7 @@ def gameLoop(startingState):
                         gameLoop("Playing")
                     elif event.key == pygame.K_q:
                         gameState = "Exit"
+                        reset_high_score()  # Reset high score when exiting the game
                         pygame.quit()
                         quit()
                 if event.key == pygame.K_UP:
@@ -197,6 +254,24 @@ def gameLoop(startingState):
                     player.thrust = False
                 if event.key == pygame.K_LEFT or event.key == pygame.K_RIGHT:
                     player.rtspd = 0
+            # Mousebutton clickable
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if gameState == "Paused" or gameState == "Game Over":
+                    mouse_pos = pygame.mouse.get_pos()
+                    buttons = draw_pause_menu(score) if gameState == "Paused" else draw_game_over_menu(score)
+                    for button in buttons:
+                        if button["rect"].collidepoint(mouse_pos):
+                            action = handle_button_click(button["text"])
+                            if action == "Playing":
+                                gameState = "Playing"
+                            elif action == "Restart":
+                                gameState = "Exit"
+                                gameLoop("Playing")
+                            elif action == "Exit":
+                                gameState = "Exit"
+                                reset_high_score()  # Reset high score when exiting the game
+                                pygame.quit()
+                                quit()
 
         # Update player
         player.updatePlayer()
@@ -217,13 +292,11 @@ def gameLoop(startingState):
             timer.tick(5)
             continue  # Skip the rest of the loop
 
-        # If game is over, display game over menu and highscore
+        # If game is over, display game over menu with real highscore
         elif gameState == "Game Over":
             update_scrolling_background()
             handle_menu_music(gameState)
-            drawText("High Score: " + str(score), white, display_width / 2, display_height / 2 - 150, 50)
-            drawText("Game Over", white, display_width / 2, display_height / 2 - 50, 100)
-            drawText("Press \"R\" to restart!", white, display_width / 2, display_height / 2 + 50, 50)
+            buttons = draw_game_over_menu(score, high_score)
             pygame.display.update()
             timer.tick(5)
             continue  # Skip the rest of the loop
@@ -531,9 +604,10 @@ def gameLoop(startingState):
             else:
                 player.drawPlayer()
 
-        # Draw score
-        drawText(str(score), white, 60, 20, 40, False)
-
+        # Draw score and high score
+        drawText(f"Score: {score}", white, 60, 20, 40, False)
+        drawText(f"High Score: {high_score}", white, display_width - 350, 20, 40, False)
+       
         # Draw Lives
         for l in range(live + 1):
             Player(75 + l * 25, 75, gameDisplay, display_width, display_height, player_size).drawPlayer()
@@ -549,5 +623,6 @@ def gameLoop(startingState):
 gameLoop("Menu")
 
 # End game
+reset_high_score()  # Reset high score when the script ends
 pygame.quit()
 quit()
