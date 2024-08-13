@@ -9,6 +9,7 @@ from deadplayer import DeadPlayer
 from player import Player
 from saucer import Saucer
 import power_ups
+import webbrowser # zum sharen des highscores per mail
 
 pygame.init()
 # game music mixer
@@ -134,31 +135,41 @@ def draw_game_over_menu(score, high_score):
     buttons = []
     button_width = 200
     button_height = 50
-    button_y_start = display_height / 2 + 100
+    button_y_start = display_height / 2 + 50
 
     drawText(f"High Score: {high_score}", white, display_width / 2, display_height / 2 - 180, 50)
     drawText(f"Your Score: {score}", white, display_width / 2, display_height / 2 - 120, 50)
     drawText("Game Over", white, display_width / 2, display_height / 2 - 50, 100)
 
-    button_text = "Retry (r)"
-    button_x = display_width / 2 - button_width / 2
-    button_y = button_y_start
-    button_rect = pygame.Rect(button_x, button_y, button_width, button_height)
-    pygame.draw.rect(gameDisplay, white, button_rect, 2)
-    drawText(button_text, white, display_width / 2, button_y + button_height / 2, 30)
-    buttons.append({"text": button_text, "rect": button_rect})
+    button_texts = ["Retry (r)", "Share High Score", "Quit (q)"]
+    for i, button_text in enumerate(button_texts):
+        button_x = display_width / 2 - button_width / 2
+        button_y = button_y_start + i * (button_height + 10)
+        button_rect = pygame.Rect(button_x, button_y, button_width, button_height)
+        pygame.draw.rect(gameDisplay, white, button_rect, 2)
+        drawText(button_text, white, display_width / 2, button_y + button_height / 2, 30)
+        buttons.append({"text": button_text, "rect": button_rect})
 
     return buttons
 
-def handle_button_click(button_text):
+def handle_button_click(button_text, score):
     if button_text == "Resume (esc)":
         return "Playing"
     elif button_text == "Retry (r)":
         return "Restart"
+    elif button_text == "Share High Score":
+        share_high_score(score)
+        return None
     elif button_text == "Quit (q)":
-        reset_high_score()  # Reset high score when quitting via button
+        reset_high_score()
         return "Exit"
     return None
+
+def share_high_score(score):
+    subject = "Schaue dir meinen neunen Asteroids 2.0 high score an!"
+    body = f"Heyho,\n\nIch habe einen neuen high score von {score} in in meinem neuen Lieblingsretro-game Asteroids 2.0 erreicht. Gehe auf https://github.com/KaranSingh1412/Asteroids und versuche ihn zu schlagen :) \n\nViel Erfolg!"
+    mailto_link = f"mailto:?subject={subject}&body={body}"
+    webbrowser.open(mailto_link)
 
 def gameLoop(startingState):
     # Init variables
@@ -258,10 +269,10 @@ def gameLoop(startingState):
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if gameState == "Paused" or gameState == "Game Over":
                     mouse_pos = pygame.mouse.get_pos()
-                    buttons = draw_pause_menu(score) if gameState == "Paused" else draw_game_over_menu(score)
+                    buttons = draw_pause_menu(score) if gameState == "Paused" else draw_game_over_menu(score, high_score)
                     for button in buttons:
                         if button["rect"].collidepoint(mouse_pos):
-                            action = handle_button_click(button["text"])
+                            action = handle_button_click(button["text"], score)
                             if action == "Playing":
                                 gameState = "Playing"
                             elif action == "Restart":
@@ -269,7 +280,6 @@ def gameLoop(startingState):
                                 gameLoop("Playing")
                             elif action == "Exit":
                                 gameState = "Exit"
-                                reset_high_score()  # Reset high score when exiting the game
                                 pygame.quit()
                                 quit()
 
