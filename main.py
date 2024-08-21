@@ -179,7 +179,6 @@ def gameLoop(startingState):
     player_pieces = []
     player_dying_delay = 0
     player_invi_dur = 0
-    hyperspace = 0
     next_level_delay = 0
     bullet_capacity = 4
     bullets = []
@@ -258,8 +257,6 @@ def gameLoop(startingState):
                     if event.key == pygame.K_r:
                         gameState = "Exit"
                         gameLoop("Playing")
-                if event.key == pygame.K_LSHIFT:
-                    hyperspace = 30
             if event.type == pygame.KEYUP:
                 if event.key == pygame.K_UP:
                     player.thrust = False
@@ -289,8 +286,6 @@ def gameLoop(startingState):
         # Checking player invincible time
         if player_invi_dur != 0:
             player_invi_dur -= 1
-        elif hyperspace == 0:
-            player_state = "Alive"
 
         # Reset display
         gameDisplay.fill(black)
@@ -310,14 +305,6 @@ def gameLoop(startingState):
             pygame.display.update()
             timer.tick(5)
             continue  # Skip the rest of the loop
-
-        # Hyperspace
-        if hyperspace != 0:
-            player_state = "Died"
-            hyperspace -= 1
-            if hyperspace == 1:
-                player.x = random.randrange(0, display_width)
-                player.y = random.randrange(0, display_height)
 
         for power_up in powerups:
             power_up.draw(gameDisplay)
@@ -601,16 +588,15 @@ def gameLoop(startingState):
         # Draw player
         if gameState != "Game Over":
             if player_state == "Died":
-                if hyperspace == 0:
-                    if player_dying_delay == 0:
-                        if player_blink < 5:
-                            if player_blink == 0:
-                                player_blink = 10
-                            else:
-                                player.drawPlayer()
-                        player_blink -= 1
-                    else:
-                        player_dying_delay -= 1
+                if player_dying_delay == 0:
+                    if player_blink < 5:
+                        if player_blink == 0:
+                            player_blink = 10
+                        else:
+                            player.drawPlayer()
+                    player_blink -= 1
+                else:
+                    player_dying_delay -= 1
             else:
                 player.drawPlayer()
 
