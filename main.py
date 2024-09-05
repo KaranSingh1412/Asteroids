@@ -10,6 +10,7 @@ from player import Player
 from saucer import Saucer
 import power_ups
 import webbrowser # zum sharen des highscores per mail
+from power_ups import Shield
 
 pygame.init()
 # game music mixer
@@ -344,40 +345,61 @@ def gameLoop(startingState):
             a.updateAsteroid()
             if player_state != "Died":
                 if isColliding(player.x, player.y, a.x, a.y, a.size):
-                    # Create ship fragments
-                    player_pieces.append(DeadPlayer(player.x, player.y, 5 * player_size / (2 * math.cos(math.atan(1 / 3))), gameDisplay))
-                    player_pieces.append(DeadPlayer(player.x, player.y, 5 * player_size / (2 * math.cos(math.atan(1 / 3))), gameDisplay))
-                    player_pieces.append(DeadPlayer(player.x, player.y, player_size, gameDisplay))
+                    # Überprüfen Sie, ob ein Schild-Powerup aktiv ist
+                    shield_active = False
+                    for power_up in active_powerups:
+                        print(f"Überprüfe Power-Up: {power_up.name}, Aktiv: {power_up.active}")  # Debug-Ausgabe
+                        if isinstance(power_up, Shield) and power_up.active:
+                            shield_active = True
+                            break
+                    if not shield_active:
+                        # Der Spieler stirbt nur, wenn kein Schild aktiv ist
+                        # Create ship fragments
+                        player_pieces.append(
+                            DeadPlayer(player.x, player.y, 5 * player_size / (2 * math.cos(math.atan(1 / 3))),
+                                       gameDisplay))
+                        player_pieces.append(
+                            DeadPlayer(player.x, player.y, 5 * player_size / (2 * math.cos(math.atan(1 / 3))),
+                                       gameDisplay))
+                        player_pieces.append(DeadPlayer(player.x, player.y, player_size, gameDisplay))
 
-                    # Kill player
-                    player_state = "Died"
-                    player_dying_delay = 30
-                    player_invi_dur = 120
-                    player.killPlayer()
+                        # Kill player
+                        player_state = "Died"
+                        player_dying_delay = 30
+                        player_invi_dur = 120
+                        player.killPlayer()
 
-                    if live != 0:
-                        live -= 1
+                        if live != 0:
+                            live -= 1
+                        else:
+                            gameState = "Game Over"
+
+                        # Split asteroid
+                        if a.t == "Large":
+                            asteroids.append(Asteroid(a.x, a.y, "Normal", gameDisplay, display_width, display_height))
+                            asteroids.append(Asteroid(a.x, a.y, "Normal", gameDisplay, display_width, display_height))
+                            score += 20
+                            # Play SFX
+                            pygame.mixer.Sound.play(snd_bangL)
+                        elif a.t == "Normal":
+                            asteroids.append(Asteroid(a.x, a.y, "Small", gameDisplay, display_width, display_height))
+                            asteroids.append(Asteroid(a.x, a.y, "Small", gameDisplay, display_width, display_height))
+                            score += 50
+                            # Play SFX
+                            pygame.mixer.Sound.play(snd_bangM)
+                        else:
+                            score += 100
+                            # Play SFX
+                            pygame.mixer.Sound.play(snd_bangS)
+                        asteroids.remove(a)
                     else:
-                        gameState = "Game Over"
-
-                    # Split asteroid
-                    if a.t == "Large":
-                        asteroids.append(Asteroid(a.x, a.y, "Normal", gameDisplay, display_width, display_height))
-                        asteroids.append(Asteroid(a.x, a.y, "Normal", gameDisplay, display_width, display_height))
-                        score += 20
-                        # Play SFX
-                        pygame.mixer.Sound.play(snd_bangL)
-                    elif a.t == "Normal":
-                        asteroids.append(Asteroid(a.x, a.y, "Small", gameDisplay, display_width, display_height))
-                        asteroids.append(Asteroid(a.x, a.y, "Small", gameDisplay, display_width, display_height))
-                        score += 50
-                        # Play SFX
-                        pygame.mixer.Sound.play(snd_bangM)
-                    else:
-                        score += 100
-                        # Play SFX
+                        # Ändern Sie deie Bewegungsrichtugn des Asteroiden anhand des Aufprallwinkels
+                        a.dir = math.atan2(a.y - player.y, a.x - player.x)
+                        a.speed = 5
+                        a.x += a.speed * math.cos(a.dir)
+                        a.y += a.speed * math.sin(a.dir)
+                        #speile einen Sound ab
                         pygame.mixer.Sound.play(snd_bangS)
-                    asteroids.remove(a)
 
         # Update ship fragments
         for f in player_pieces:
