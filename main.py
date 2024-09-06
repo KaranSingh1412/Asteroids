@@ -60,6 +60,7 @@ snd_bangM = pygame.mixer.Sound("Sounds/bangMedium.wav")
 snd_bangS = pygame.mixer.Sound("Sounds/bangSmall.wav")
 snd_extra = pygame.mixer.Sound("Sounds/extra.wav")
 menu_music = pygame.mixer.Sound("Music/1.IntoTheSpaceship.wav")
+collision_sound = pygame.mixer.Sound("Sounds/Collision.A.wav")
 
 # Import Background Image Menu
 background_image = pygame.image.load('Assets/backgrounds/1920-space-wallpaper-banner-background-stunning-view-of-a-cosmic-galaxy-with-planets-and-space-objects-elements-of-this-image-furnished-by-nasa-generate-ai.jpg')
@@ -399,7 +400,7 @@ def gameLoop(startingState):
                         a.x += a.speed * math.cos(a.dir)
                         a.y += a.speed * math.sin(a.dir)
                         #speile einen Sound ab
-                        pygame.mixer.Sound.play(snd_bangS)
+                        pygame.mixer.Sound.play(collision_sound)
 
         # Update ship fragments
         for f in player_pieces:
@@ -543,35 +544,48 @@ def gameLoop(startingState):
                         break
 
                 # Check for collision w/ player
-                if isColliding(player.x, player.y, b.x, b.y, 5):
-                    if player_state != "Died":
-                        # Create ship fragments
-                        player_pieces.append(DeadPlayer(player.x, player.y, 5 * player_size / (2 * math.cos(math.atan(1 / 3))), gameDisplay))
-                        player_pieces.append(DeadPlayer(player.x, player.y, 5 * player_size / (2 * math.cos(math.atan(1 / 3))), gameDisplay))
-                        player_pieces.append(DeadPlayer(player.x, player.y, player_size, gameDisplay))
+                for b in saucer.bullets:
+                    if isColliding(player.x, player.y, b.x, b.y, 5):
+                        if player_state != "Died":
+                            # Überprüfen Sie, ob ein Schild-Powerup aktiv ist
+                            shield_active = False
+                            for power_up in active_powerups:
+                                if isinstance(power_up, Shield) and power_up.active:
+                                    shield_active = True
+                                    break
+                            if not shield_active:
+                                # Create ship fragments
+                                player_pieces.append(
+                                    DeadPlayer(player.x, player.y, 5 * player_size / (2 * math.cos(math.atan(1 / 3))),
+                                               gameDisplay))
+                                player_pieces.append(
+                                    DeadPlayer(player.x, player.y, 5 * player_size / (2 * math.cos(math.atan(1 / 3))),
+                                               gameDisplay))
+                                player_pieces.append(DeadPlayer(player.x, player.y, player_size, gameDisplay))
 
-                        # Kill player
-                        player_state = "Died"
-                        player_dying_delay = 30
-                        player_invi_dur = 120
-                        player.killPlayer()
+                                # Kill player
+                                player_state = "Died"
+                                player_dying_delay = 30
+                                player_invi_dur = 120
+                                player.killPlayer()
 
-                        if live != 0:
-                            live -= 1
-                        else:
-                            gameState = "Game Over"
+                                if live != 0:
+                                    live -= 1
+                                else:
+                                    gameState = "Game Over"
 
-                        # Play SFX
-                        pygame.mixer.Sound.play(snd_bangL)
+                                # Play SFX
+                                pygame.mixer.Sound.play(snd_bangL)
+                            else:
+                                saucer.bullets.remove(b)
+                                # füge den Sound coliision_sound hinzu
+                                pygame.mixer.Sound.play(collision_sound)
 
-                        # Remove bullet
-                        saucer.bullets.remove(b)
-
-                if b.life <= 0:
-                    try:
-                        saucer.bullets.remove(b)
-                    except ValueError:
-                        continue
+                    if b.life <= 0:
+                        try:
+                            saucer.bullets.remove(b)
+                        except ValueError:
+                            continue
 
         # Bullets
         for b in bullets:
