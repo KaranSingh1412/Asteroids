@@ -17,6 +17,7 @@ from power_ups import Rocket
 from power_ups import Shield
 from saucer import Saucer
 from bullet import ExplosionBullet
+import time
 
 pygame.init()
 # game music mixer
@@ -220,6 +221,7 @@ def gameLoop(startingState):
     player = Player(display_width / 2, display_height / 2, gameDisplay, display_width, display_height, player_size)
     saucer: Saucer = Saucer(display_width, display_height, gameDisplay)
     high_score = read_high_score()
+    last_rocket_shot_time = 0
 
     # Main loop
     while gameState != "Exit":
@@ -282,13 +284,15 @@ def gameLoop(startingState):
                             rocket_active = True
                             break
 
-                    if rocket_active:
+                    current_time = time.time()
+                    if rocket_active and current_time - last_rocket_shot_time >= 1:
                         bullets.append(
                             RocketBullet(player.x, player.y, player.dir, gameDisplay, display_width, display_height,
                                          'Assets/Powerups/Rocket.png'))
                         # Spiele den Raketen-Sound ab, wenn eine Rakete abgeschossen wird
                         pygame.mixer.Sound.play(rocket_start)
-                    else:
+                        last_rocket_shot_time = current_time  # Aktualisiere die Zeit des letzten Raketenabschusses
+                    elif not rocket_active:
                         bullets.append(
                             Bullet(player.x, player.y, player.dir, gameDisplay, display_width, display_height))
                         # Spiele den Bullet-Sound ab, wenn eine normale Bullet abgeschossen wird
