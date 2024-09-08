@@ -77,6 +77,10 @@ rocket_start = pygame.mixer.Sound("Sounds/Rocket_start.wav")
 # Import Background Image Menu
 background_image = pygame.image.load(
     'Assets/backgrounds/1920-space-wallpaper-banner-background-stunning-view-of-a-cosmic-galaxy-with-planets-and-space-objects-elements-of-this-image-furnished-by-nasa-generate-ai.jpg')
+
+# thank you vecteezy.com for the free background image
+background_image = pygame.image.load('Assets/backgrounds/1920-space-wallpaper-banner-background-stunning-view-of-a-cosmic-galaxy-with-planets-and-space-objects-elements-of-this-image-furnished-by-nasa-generate-ai.jpg')
+
 background_x = 0
 background_y = 0
 scroll_speed = 1  # Adjust this value to change the scrolling speed
@@ -134,7 +138,7 @@ def draw_pause_menu(score):
     update_scrolling_background()
     # Draw the buttons
     buttons = []
-    button_width = 200
+    button_width = 300
     button_height = 50
     button_y_start = display_height / 2 - 1.5 * button_height
     for i, button_text in enumerate(["Resume (esc)", "Retry (r)", "Quit (q)"]):
@@ -146,7 +150,7 @@ def draw_pause_menu(score):
         buttons.append({"text": button_text, "rect": button_rect})
 
     # Draw the current score
-    drawText("Current Score: " + str(score), white, display_width / 2, button_y_start - 50, 30)
+    drawText("Current Score: " + str(score), white, display_width / 2, button_y_start - 50, 50)
 
     return buttons
 
@@ -154,7 +158,7 @@ def draw_pause_menu(score):
 def draw_game_over_menu(score, high_score):
     update_scrolling_background()
     buttons = []
-    button_width = 200
+    button_width = 300
     button_height = 50
     button_y_start = display_height / 2 + 50
 
