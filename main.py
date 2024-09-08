@@ -1,22 +1,27 @@
 # Import modules
-import os
-import pygame
+# Import modules
 import math
+import os
 import random
+import webbrowser  # zum sharen des highscores per mail
+
+import pygame
+
+import power_ups
 from asteroid import Asteroid
 from bullet import Bullet
+from bullet import RocketBullet
 from deadplayer import DeadPlayer
 from player import Player
-from saucer import Saucer
-import power_ups
-import webbrowser # zum sharen des highscores per mail
+from power_ups import Rocket
 from power_ups import Shield
+from saucer import Saucer
+from bullet import ExplosionBullet
 
 pygame.init()
 # game music mixer
 pygame.mixer.init()
 clock = pygame.time.Clock()
-
 
 # Initialize constants
 white = (255, 255, 255)
@@ -37,22 +42,26 @@ pygame.display.set_mode((display_width, display_height), pygame.DOUBLEBUF)
 pygame.display.set_caption("Asteroids")
 timer = pygame.time.Clock()
 
+
 def read_high_score():
     if os.path.exists("highscore.txt"):
         with open("highscore.txt", "r") as file:
             return int(file.read())
     return 0
 
+
 def write_high_score(score):
     with open("highscore.txt", "w") as file:
         file.write(str(score))
+
 
 def reset_high_score():
     if os.path.exists("highscore.txt"):
         os.remove("highscore.txt")
     else:
         write_high_score(0)
-                   
+
+
 # Import sound effects and music
 snd_fire = pygame.mixer.Sound("Sounds/fire.wav")
 snd_bangL = pygame.mixer.Sound("Sounds/bangLarge.wav")
@@ -61,20 +70,24 @@ snd_bangS = pygame.mixer.Sound("Sounds/bangSmall.wav")
 snd_extra = pygame.mixer.Sound("Sounds/extra.wav")
 menu_music = pygame.mixer.Sound("Music/1.IntoTheSpaceship.wav")
 collision_sound = pygame.mixer.Sound("Sounds/Collision.A.wav")
+rocket_expl = pygame.mixer.Sound("Sounds/Rocket.Expl.wav")
+rocket_start = pygame.mixer.Sound("Sounds/Rocket_start.wav")
 
 # Import Background Image Menu
-background_image = pygame.image.load('Assets/backgrounds/1920-space-wallpaper-banner-background-stunning-view-of-a-cosmic-galaxy-with-planets-and-space-objects-elements-of-this-image-furnished-by-nasa-generate-ai.jpg')
+background_image = pygame.image.load(
+    'Assets/backgrounds/1920-space-wallpaper-banner-background-stunning-view-of-a-cosmic-galaxy-with-planets-and-space-objects-elements-of-this-image-furnished-by-nasa-generate-ai.jpg')
 background_x = 0
 background_y = 0
 scroll_speed = 1  # Adjust this value to change the scrolling speed
 scroll_direction = 1  # 1 for right to left, -1 for left to right
 
+
 def update_scrolling_background():
     global background_x, background_y, scroll_direction
-    
+
     # Update the background position
     background_x -= scroll_speed * scroll_direction
-    
+
     # Check if we've reached either end
     if background_x <= -background_image.get_width() + display_width:
         # Reached the left end, reverse direction
@@ -84,9 +97,10 @@ def update_scrolling_background():
         # Reached the right end, reverse direction
         scroll_direction = 1
         background_x = 0
-    
+
     # Draw the background
     gameDisplay.blit(background_image, (int(background_x), int(background_y)))
+
 
 # Create function to draw texts
 def drawText(msg, color, x, y, s, center=True):
@@ -98,6 +112,7 @@ def drawText(msg, color, x, y, s, center=True):
         rect = (x, y)
     gameDisplay.blit(screen_text, rect)
 
+
 # Create a function to handle playing and stopping the music
 def handle_menu_music(gameState):
     if gameState in ["Menu", "Paused", "Game Over"]:
@@ -106,11 +121,13 @@ def handle_menu_music(gameState):
     else:
         menu_music.stop()
 
+
 # Create function to check for collision
 def isColliding(x, y, xTo, yTo, size):
     if x > xTo - size and x < xTo + size and y > yTo - size and y < yTo + size:
         return True
     return False
+
 
 def draw_pause_menu(score):
     update_scrolling_background()
@@ -131,6 +148,7 @@ def draw_pause_menu(score):
     drawText("Current Score: " + str(score), white, display_width / 2, button_y_start - 50, 30)
 
     return buttons
+
 
 def draw_game_over_menu(score, high_score):
     update_scrolling_background()
@@ -154,6 +172,7 @@ def draw_game_over_menu(score, high_score):
 
     return buttons
 
+
 def handle_button_click(button_text, score):
     if button_text == "Resume (esc)":
         return "Playing"
@@ -167,14 +186,17 @@ def handle_button_click(button_text, score):
         return "Exit"
     return None
 
+
 def share_high_score(score):
     subject = "Schaue dir meinen neunen Asteroids 2.0 high score an!"
     body = f"Heyho,\n\nIch habe einen neuen high score von {score} in in meinem neuen Lieblingsretro-game Asteroids 2.0 erreicht. Gehe auf https://github.com/KaranSingh1412/Asteroids und versuche ihn zu schlagen :) \n\nViel Erfolg!"
     mailto_link = f"mailto:?subject={subject}&body={body}"
     webbrowser.open(mailto_link)
 
+
 def gameLoop(startingState):
     # Init variables
+    global power_up
     gameState = startingState
     player_state = "Alive"
     player_blink = 0
@@ -186,6 +208,7 @@ def gameLoop(startingState):
     bullet_capacity = 4
     bullets = []
     asteroids = []
+    Explosion_bullets = []
     powerups = []
     active_powerups = []
     stage = 3
@@ -195,12 +218,12 @@ def gameLoop(startingState):
     playOneUpSFX = 0
     intensity = 0
     player = Player(display_width / 2, display_height / 2, gameDisplay, display_width, display_height, player_size)
-    saucer = Saucer(display_width, display_height, gameDisplay)
+    saucer: Saucer = Saucer(display_width, display_height, gameDisplay)
     high_score = read_high_score()
 
     # Main loop
     while gameState != "Exit":
-        handle_menu_music(gameState)    
+        handle_menu_music(gameState)
         # Game menu
         while gameState == "Menu":
             update_scrolling_background()
@@ -253,9 +276,24 @@ def gameLoop(startingState):
                 if event.key == pygame.K_RIGHT:
                     player.rtspd = player_max_rtspd
                 if event.key == pygame.K_SPACE and player_dying_delay == 0 and len(bullets) < bullet_capacity:
-                    bullets.append(Bullet(player.x, player.y, player.dir, gameDisplay, display_width, display_height))
-                    # Play SFX
-                    pygame.mixer.Sound.play(snd_fire)
+                    rocket_active = False
+                    for power_up in active_powerups:
+                        if isinstance(power_up, Rocket) and power_up.active:
+                            rocket_active = True
+                            break
+
+                    if rocket_active:
+                        bullets.append(
+                            RocketBullet(player.x, player.y, player.dir, gameDisplay, display_width, display_height,
+                                         'Assets/Powerups/Rocket.png'))
+                        # Spiele den Raketen-Sound ab, wenn eine Rakete abgeschossen wird
+                        pygame.mixer.Sound.play(rocket_start)
+                    else:
+                        bullets.append(
+                            Bullet(player.x, player.y, player.dir, gameDisplay, display_width, display_height))
+                        # Spiele den Bullet-Sound ab, wenn eine normale Bullet abgeschossen wird
+                        pygame.mixer.Sound.play(snd_fire)
+
                 if gameState == "Game Over":
                     if event.key == pygame.K_r:
                         gameState = "Exit"
@@ -271,7 +309,8 @@ def gameLoop(startingState):
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if gameState == "Paused" or gameState == "Game Over":
                     mouse_pos = pygame.mouse.get_pos()
-                    buttons = draw_pause_menu(score) if gameState == "Paused" else draw_game_over_menu(score, high_score)
+                    buttons = draw_pause_menu(score) if gameState == "Paused" else draw_game_over_menu(score,
+                                                                                                       high_score)
                     for button in buttons:
                         if button["rect"].collidepoint(mouse_pos):
                             action = handle_button_click(button["text"], score)
@@ -340,7 +379,6 @@ def gameLoop(startingState):
                 # Wenn das Schild aktiv ist, zeichnen Sie eine  Umrandung um den Spieler
                 pygame.draw.circle(gameDisplay, (173, 216, 250), (int(player.x), int(player.y)), player_size + 10, 2)
 
-        
         # Check for collision w/ asteroid
         for a in asteroids:
             a.updateAsteroid()
@@ -394,12 +432,12 @@ def gameLoop(startingState):
                             pygame.mixer.Sound.play(snd_bangS)
                         asteroids.remove(a)
                     else:
-                        # Ändern Sie deie Bewegungsrichtugn des Asteroiden anhand des Aufprallwinkels
+                        # Ändern Sie die Bewegungsrichtugn des Asteroiden anhand des Aufprallwinkels
                         a.dir = math.atan2(a.y - player.y, a.x - player.x)
                         a.speed = 5
                         a.x += a.speed * math.cos(a.dir)
                         a.y += a.speed * math.sin(a.dir)
-                        #speile einen Sound ab
+                        #Füge einen Sound hinzu
                         pygame.mixer.Sound.play(collision_sound)
 
         # Update ship fragments
@@ -439,7 +477,8 @@ def gameLoop(startingState):
         else:
             # Set saucer targer dir
             acc = small_saucer_accuracy * 4 / stage
-            saucer.bdir = math.degrees(math.atan2(-saucer.y + player.y, -saucer.x + player.x) + math.radians(random.uniform(acc, -acc)))
+            saucer.bdir = math.degrees(
+                math.atan2(-saucer.y + player.y, -saucer.x + player.x) + math.radians(random.uniform(acc, -acc)))
 
             saucer.updateSaucer()
             saucer.drawSaucer()
@@ -466,24 +505,25 @@ def gameLoop(startingState):
                         pygame.mixer.Sound.play(snd_bangS)
                     asteroids.remove(a)
 
-            # Check for collision w/ bullet
             for b in bullets:
                 if isColliding(b.x, b.y, saucer.x, saucer.y, saucer.size):
                     # Add points
                     if saucer.type == "Large":
                         score += 200
-                        
                     else:
                         score += 1000
 
                     # Set saucer state
                     saucer.state = "Dead"
-                    
+
                     # Wählen Sie zufällig ein Power-Up aus
-                    power_up_type = random.choice(['Shield'])  # Wählen Sie zufällig ein Power-Up aus
+                    power_up_type = random.choice(['Shield', 'Rocket'])  # Wählen Sie zufällig ein Power-Up aus
 
                     if power_up_type == 'Shield':
                         new_power_up = power_ups.Shield(saucer.x, saucer.y, 'Assets/Powerups/Shield.png')
+                        powerups.append(new_power_up)
+                    elif power_up_type == 'Rocket':
+                        new_power_up = power_ups.Rocket(saucer.x, saucer.y, 'Assets/Powerups/Rocket.png')
                         powerups.append(new_power_up)
 
                     # Play SFX
@@ -492,12 +532,31 @@ def gameLoop(startingState):
                     # Remove bullet
                     bullets.remove(b)
 
+                    # Überprüfen, ob die Kugel eine RocketBullet ist und explodiert
+                    if isinstance(b, RocketBullet):
+                        # Spielen Sie den Explosionseffekt ab
+                        pygame.mixer.Sound.play(rocket_expl)
+                        b.exploded = True
+                        # Erzeugen Sie kleinere Projektile (normale Bullets) in unterschiedlichen zufälligen Richtungen
+                        small_projectiles = []
+                        for _ in range(10):  # Anzahl der kleineren Projektile
+
+                            angle = random.uniform(0, 360)
+
+                            small_projectiles.append(
+                                ExplosionBullet(b.x, b.y, angle, b.gameDisplay, b.display_width, b.display_height))
+                        Explosion_bullets.extend(small_projectiles)  # Verwende die Liste explosion_bullets
+
+
+
             # Check collision w/ player
             if isColliding(saucer.x, saucer.y, player.x, player.y, saucer.size):
                 if player_state != "Died":
                     # Create ship fragments
-                    player_pieces.append(DeadPlayer(player.x, player.y, 5 * player_size / (2 * math.cos(math.atan(1 / 3))), gameDisplay))
-                    player_pieces.append(DeadPlayer(player.x, player.y, 5 * player_size / (2 * math.cos(math.atan(1 / 3))), gameDisplay))
+                    player_pieces.append(
+                        DeadPlayer(player.x, player.y, 5 * player_size / (2 * math.cos(math.atan(1 / 3))), gameDisplay))
+                    player_pieces.append(
+                        DeadPlayer(player.x, player.y, 5 * player_size / (2 * math.cos(math.atan(1 / 3))), gameDisplay))
                     player_pieces.append(DeadPlayer(player.x, player.y, player_size, gameDisplay))
 
                     # Kill player
@@ -543,7 +602,6 @@ def gameLoop(startingState):
 
                         break
 
-                # Check for collision w/ player
                 for b in saucer.bullets:
                     if isColliding(player.x, player.y, b.x, b.y, 5):
                         if player_state != "Died":
@@ -592,6 +650,21 @@ def gameLoop(startingState):
             # Update bullets
             b.updateBullet()
 
+            # Überprüfen, ob das Rocket-Power-Up aktiv ist
+            rocket_active = False
+            for power_up in active_powerups:
+                if isinstance(power_up, Rocket) and power_up.active:
+                    rocket_active = True
+                    break
+
+            # Wenn das Rocket-Power-Up aktiv ist und die Kugel eine normale Bullet ist, ändern Sie sie in eine RocketBullet
+            if rocket_active and isinstance(b, Bullet) and not isinstance(b, RocketBullet):
+                rocket_bullet = RocketBullet(b.x, b.y, b.dir, b.gameDisplay, b.display_width, b.display_height,
+                                             'Assets/Powerups/Rocket.png')
+                bullets.append(rocket_bullet)
+                bullets.remove(b)
+                b = rocket_bullet
+
             # Check for bullets collide w/ asteroid
             for a in asteroids:
                 if b.x > a.x - a.size and b.x < a.x + a.size and b.y > a.y - a.size and b.y < a.y + a.size:
@@ -613,7 +686,23 @@ def gameLoop(startingState):
                         # Play SFX
                         pygame.mixer.Sound.play(snd_bangS)
                     asteroids.remove(a)
-                    bullets.remove(b)
+                    if b in bullets:
+                        bullets.remove(b)
+
+                    # Überprüfen, ob die Kugel eine RocketBullet ist und explodiert
+                    if isinstance(b, RocketBullet):
+                        # Spielen Sie den Explosionseffekt ab
+                        pygame.mixer.Sound.play(rocket_expl)
+                        b.exploded = True
+                        # Erzeugen Sie kleinere Projektile (normale Bullets) in unterschiedlichen zufälligen Richtungen
+                        small_projectiles = []
+                        for _ in range(10):  # Anzahl der kleineren Projektile
+                            #die Projektile sollen in 10 unterschiiedliche Richtungen fliegen
+                            angle = random.uniform(0, 360)
+
+                            small_projectiles.append(
+                                ExplosionBullet(b.x, b.y, angle, b.gameDisplay, b.display_width, b.display_height))
+                        Explosion_bullets.extend(small_projectiles)  # Verwende die Liste explosion_bullets
 
                     break
 
@@ -621,6 +710,49 @@ def gameLoop(startingState):
             if b.life <= 0:
                 try:
                     bullets.remove(b)
+                except ValueError:
+                    continue
+
+        # ExplosionBullets
+        for eb in Explosion_bullets:
+            # Update explosion bullets
+            eb.updateBullet()
+
+            # Check for explosion bullets collide w/ asteroid
+            for a in asteroids:
+                if eb.x > a.x - a.size and eb.x < a.x + a.size and eb.y > a.y - a.size and eb.y < a.y + a.size:
+                    # Split asteroid
+                    if a.t == "Large":
+                        asteroids.append(Asteroid(a.x, a.y, "Normal", gameDisplay, display_width, display_height))
+                        asteroids.append(Asteroid(a.x, a.y, "Normal", gameDisplay, display_width, display_height))
+                        score += 20
+                        # Play SFX
+                        pygame.mixer.Sound.play(snd_bangL)
+                    elif a.t == "Normal":
+                        asteroids.append(Asteroid(a.x, a.y, "Small", gameDisplay, display_width, display_height))
+                        asteroids.append(Asteroid(a.x, a.y, "Small", gameDisplay, display_width, display_height))
+                        score += 50
+                        # Play SFX
+                        pygame.mixer.Sound.play(snd_bangM)
+                    else:
+                        score += 100
+                        # Play SFX
+                        pygame.mixer.Sound.play(snd_bangS)
+                    asteroids.remove(a)
+                    if eb in Explosion_bullets:
+                        Explosion_bullets.remove(eb)
+
+            # Destroying explosion bullets
+            if eb.life <= 0:
+                try:
+                    Explosion_bullets.remove(eb)
+                except ValueError:
+                    continue
+
+            # Destroying explosion bullets
+            if eb.life <= 0:
+                try:
+                    Explosion_bullets.remove(eb)
                 except ValueError:
                     continue
 
@@ -653,7 +785,7 @@ def gameLoop(startingState):
         # Draw score and high score
         drawText(f"Score: {score}", white, 60, 20, 40, False)
         drawText(f"High Score: {high_score}", white, display_width - 350, 20, 40, False)
-       
+
         # Draw Lives
         for l in range(live + 1):
             Player(75 + l * 25, 75, gameDisplay, display_width, display_height, player_size).drawPlayer()
