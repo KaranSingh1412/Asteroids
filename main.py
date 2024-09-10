@@ -118,7 +118,6 @@ def drawText(msg, color, x, y, s, center=True):
 
 # Create a function to handle playing and stopping the music
 def handle_menu_music(gameState):
-    return
     if gameState in ["Menu", "Paused", "Game Over"]:
         if not pygame.mixer.get_busy():
             menu_music.play(-1)  # -1 means loop infinitely
