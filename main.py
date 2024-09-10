@@ -30,6 +30,9 @@ player_max_rtspd = 10
 
 small_saucer_accuracy = 10
 
+button_width = 250
+button_height = 50
+
 # Make surface and display
 gameDisplay = pygame.display.set_mode((display_width, display_height))
 pygame.display.set_mode((display_width, display_height), pygame.DOUBLEBUF)
@@ -98,9 +101,10 @@ def drawText(msg, color, x, y, s, center=True):
 
 # Create a function to handle playing and stopping the music
 def handle_menu_music(gameState):
+    return
     if gameState in ["Menu", "Paused", "Game Over"]:
         if not pygame.mixer.get_busy():
-            menu_music.play(-1)  # -1 means loop indefinitely
+            menu_music.play(-1)  # -1 means loop infinitely
     else:
         menu_music.stop()
 
@@ -114,10 +118,8 @@ def draw_pause_menu(score):
     update_scrolling_background()
     # Draw the buttons
     buttons = []
-    button_width = 200
-    button_height = 50
     button_y_start = display_height / 2 - 1.5 * button_height
-    for i, button_text in enumerate(["Resume (esc)", "Retry (r)", "Quit (q)"]):
+    for i, button_text in enumerate(["Resume (esc)", "Retry", "Menu"]):
         button_x = display_width / 2 - button_width / 2
         button_y = button_y_start + i * (button_height + 10)
         button_rect = pygame.Rect(button_x, button_y, button_width, button_height)
@@ -133,8 +135,6 @@ def draw_pause_menu(score):
 def draw_game_over_menu(score, high_score):
     update_scrolling_background()
     buttons = []
-    button_width = 200
-    button_height = 50
     button_y_start = display_height / 2 + 50
 
     drawText(f"High Score: {high_score}", white, display_width / 2, display_height / 2 - 180, 50)
@@ -155,14 +155,20 @@ def draw_game_over_menu(score, high_score):
 def handle_button_click(button_text, score):
     if button_text == "Resume (esc)":
         return "Playing"
-    elif button_text == "Retry (r)":
+    elif button_text == "Retry":
         return "Restart"
     elif button_text == "Share High Score":
         share_high_score(score)
         return None
-    elif button_text == "Quit (q)":
+    elif button_text == "Menu":
         reset_high_score()
+        return "Menu"
+    elif button_text == "Multiplayer (m)":
+        return "Menu"
+    elif button_text == "Quit (q)":
         return "Exit"
+    elif button_text == "Play (Enter)":
+        return "Playing"
     return None
 
 def share_high_score(score):
@@ -170,6 +176,20 @@ def share_high_score(score):
     body = f"Heyho,\n\nIch habe einen neuen high score von {score} in in meinem neuen Lieblingsretro-game Asteroids 2.0 erreicht. Gehe auf https://github.com/KaranSingh1412/Asteroids und versuche ihn zu schlagen :) \n\nViel Erfolg!"
     mailto_link = f"mailto:?subject={subject}&body={body}"
     webbrowser.open(mailto_link)
+
+def draw_menu_screen():
+    update_scrolling_background()
+    buttons = []
+    button_y_start = display_height / 2 - 1.5 * button_height
+    for i, button_text in enumerate(["Play (Enter)", "Multiplayer (m)", "Quit (q)"]):
+        button_x = display_width / 2 - button_width / 2
+        button_y = button_y_start + i * (button_height + 10)
+        button_rect = pygame.Rect(button_x, button_y, button_width, button_height)
+        pygame.draw.rect(gameDisplay, white, button_rect, 2)
+        drawText(button_text, white, display_width / 2, button_y + button_height / 2, 30)
+        buttons.append({"text": button_text, "rect": button_rect})
+
+    return buttons
 
 def gameLoop(startingState):
     # Init variables
@@ -184,11 +204,12 @@ def gameLoop(startingState):
     bullets = []
     asteroids = []
     powerups = []
-    active_powerups = []
+    # active_powerups = []
     stage = 3
     score = 0
     live = 2
     oneUp_multiplier = 1
+    hyperspace = 0
     playOneUpSFX = 0
     intensity = 0
     player = Player(display_width / 2, display_height / 2, gameDisplay, display_width, display_height, player_size)
@@ -200,16 +221,14 @@ def gameLoop(startingState):
         handle_menu_music(gameState)    
         # Game menu
         while gameState == "Menu":
-            update_scrolling_background()
-            drawText("ASTEROIDS", white, display_width / 2, display_height / 2, 100)
-            drawText("Press any key to START", white, display_width / 2, display_height / 2 + 100, 50)
+            draw_menu_screen()
+            handle_menu_music(gameState)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    reset_high_score()  # Reset high score when closing the window
+                    reset_high_score()
                     gameState = "Exit"
-                if event.type == pygame.KEYDOWN:
+                if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
                     gameState = "Playing"
-                    # stop menu music
                     handle_menu_music(gameState)
 
             pygame.display.update()
@@ -234,15 +253,15 @@ def gameLoop(startingState):
                     # start menu music
                     handle_menu_music(gameState)
 
-                elif gameState == "Paused":
-                    if event.key == pygame.K_r:
-                        gameState = "Exit"
-                        gameLoop("Playing")
-                    elif event.key == pygame.K_q:
-                        gameState = "Exit"
-                        reset_high_score()  # Reset high score when exiting the game
-                        pygame.quit()
-                        quit()
+                # elif gameState == "Paused":
+                #     if event.key == pygame.K_r:
+                #         gameState = "Exit"
+                #         gameLoop("Playing")
+                #     elif event.key == pygame.K_q:
+                #         gameState = "Menu"
+                #         reset_high_score()  # Reset high score when exiting the game
+                #         pygame.quit()
+                #         quit()
                 if event.key == pygame.K_UP:
                     player.thrust = True
                 if event.key == pygame.K_LEFT:
@@ -257,6 +276,9 @@ def gameLoop(startingState):
                     if event.key == pygame.K_r:
                         gameState = "Exit"
                         gameLoop("Playing")
+                    if event.key == pygame.K_LSHIFT:
+                        hyperspace = 30
+
             if event.type == pygame.KEYUP:
                 if event.key == pygame.K_UP:
                     player.thrust = False
@@ -266,17 +288,26 @@ def gameLoop(startingState):
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if gameState == "Paused" or gameState == "Game Over":
                     mouse_pos = pygame.mouse.get_pos()
-                    buttons = draw_pause_menu(score) if gameState == "Paused" else draw_game_over_menu(score, high_score)
+                    buttons = []
+                    if gameState == "Paused":
+                        buttons = draw_pause_menu(score)
+                    elif gameState == "Game Over":
+                        buttons = draw_game_over_menu(score, high_score)
+                    elif gameState == "Menu":
+                        buttons = draw_menu_screen()
+                    # buttons = draw_pause_menu(score) if gameState == "Paused" else draw_game_over_menu(score, high_score)
                     for button in buttons:
                         if button["rect"].collidepoint(mouse_pos):
+                            pygame.draw.rect(gameDisplay, (255, 255, 255), button["rect"], 2)
                             action = handle_button_click(button["text"], score)
                             if action == "Playing":
                                 gameState = "Playing"
                             elif action == "Restart":
                                 gameState = "Exit"
                                 gameLoop("Playing")
+                            elif action == "Menu":
+                                gameState = "Menu"
                             elif action == "Exit":
-                                gameState = "Exit"
                                 pygame.quit()
                                 quit()
 
@@ -286,6 +317,9 @@ def gameLoop(startingState):
         # Checking player invincible time
         if player_invi_dur != 0:
             player_invi_dur -= 1
+        elif hyperspace == 0:
+            player_state = "Alive"
+
 
         # Reset display
         gameDisplay.fill(black)
@@ -306,21 +340,29 @@ def gameLoop(startingState):
             timer.tick(5)
             continue  # Skip the rest of the loop
 
+        # Hyperspace
+        if hyperspace != 0:
+            player_state = "Died"
+            hyperspace -= 1
+            if hyperspace == 1:
+                player.x = random.randrange(0, display_width)
+                player.y = random.randrange(0, display_height)
+
         for power_up in powerups:
             power_up.draw(gameDisplay)
             if power_up.collides_with_player(player):  # Übergeben Sie das 'player'-Objekt
                 if not power_up.is_activated:  # Überprüfen Sie, ob das Power-Up bereits aktiviert wurde
                     power_up.activate()  # Aktivieren Sie das Power-Up
-                    active_powerups.append(power_up)  # Fügen Sie das Power-Up zur Liste der aktiven Power-Ups hinzu
-                    print(active_powerups)
+                    player.active_powerups.append(power_up)  # Fügen Sie das Power-Up zur Liste der aktiven Power-Ups hinzu
+                    print(player.active_powerups)
                     powerups.remove(power_up)  # Entfernen Sie das Power-Up aus der Liste
-        for power_up in active_powerups.copy():  # Verwenden Sie .copy() um über eine Kopie der Liste zu iterieren
+        for power_up in player.active_powerups.copy():  # Verwenden Sie .copy() um über eine Kopie der Liste zu iterieren
             power_up.update()  # Aktualisieren Sie den Zustand des Power-Ups
 
             # Überprüfen Sie, ob das Power-Up noch aktiv ist
             if not power_up.active:
                 # Wenn das Power-Up nicht mehr aktiv ist, entfernen Sie es aus der Liste
-                active_powerups.remove(power_up)
+                player.active_powerups.remove(power_up)
             elif isinstance(power_up, power_ups.Shield):
                 # Wenn das Schild aktiv ist, zeichnen Sie eine  Umrandung um den Spieler
                 pygame.draw.circle(gameDisplay, (173, 216, 250), (int(player.x), int(player.y)), player_size + 10, 2)
@@ -588,15 +630,16 @@ def gameLoop(startingState):
         # Draw player
         if gameState != "Game Over":
             if player_state == "Died":
-                if player_dying_delay == 0:
-                    if player_blink < 5:
-                        if player_blink == 0:
-                            player_blink = 10
-                        else:
-                            player.drawPlayer()
-                    player_blink -= 1
-                else:
-                    player_dying_delay -= 1
+                if hyperspace == 0:
+                    if player_dying_delay == 0:
+                        if player_blink < 5:
+                            if player_blink == 0:
+                                player_blink = 10
+                            else:
+                                player.drawPlayer()
+                        player_blink -= 1
+                    else:
+                        player_dying_delay -= 1
             else:
                 player.drawPlayer()
 
