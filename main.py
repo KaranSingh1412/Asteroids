@@ -1,9 +1,8 @@
-# Import modules
-# Import modules
 import math
 import os
 import random
 import webbrowser  # zum sharen des highscores per mail
+import time
 
 import pygame
 
@@ -17,7 +16,6 @@ from power_ups import Rocket
 from power_ups import Shield
 from saucer import Saucer
 from bullet import ExplosionBullet
-import time
 
 pygame.init()
 # game music mixer
@@ -36,6 +34,7 @@ player_size = 10
 player_max_rtspd = 10
 
 small_saucer_accuracy = 10
+large_saucer_accuracy = 5
 
 # Make surface and display
 gameDisplay = pygame.display.set_mode((display_width, display_height))
@@ -77,10 +76,6 @@ rocket_start = pygame.mixer.Sound("Sounds/Rocket_start.wav")
 # Import Background Image Menu
 background_image = pygame.image.load(
     'Assets/backgrounds/1920-space-wallpaper-banner-background-stunning-view-of-a-cosmic-galaxy-with-planets-and-space-objects-elements-of-this-image-furnished-by-nasa-generate-ai.jpg')
-
-# thank you vecteezy.com for the free background image
-background_image = pygame.image.load('Assets/backgrounds/1920-space-wallpaper-banner-background-stunning-view-of-a-cosmic-galaxy-with-planets-and-space-objects-elements-of-this-image-furnished-by-nasa-generate-ai.jpg')
-
 background_x = 0
 background_y = 0
 scroll_speed = 1  # Adjust this value to change the scrolling speed
@@ -138,7 +133,7 @@ def draw_pause_menu(score):
     update_scrolling_background()
     # Draw the buttons
     buttons = []
-    button_width = 300
+    button_width = 200
     button_height = 50
     button_y_start = display_height / 2 - 1.5 * button_height
     for i, button_text in enumerate(["Resume (esc)", "Retry (r)", "Quit (q)"]):
@@ -150,7 +145,7 @@ def draw_pause_menu(score):
         buttons.append({"text": button_text, "rect": button_rect})
 
     # Draw the current score
-    drawText("Current Score: " + str(score), white, display_width / 2, button_y_start - 50, 50)
+    drawText("Current Score: " + str(score), white, display_width / 2, button_y_start - 50, 30)
 
     return buttons
 
@@ -158,7 +153,7 @@ def draw_pause_menu(score):
 def draw_game_over_menu(score, high_score):
     update_scrolling_background()
     buttons = []
-    button_width = 300
+    button_width = 200
     button_height = 50
     button_y_start = display_height / 2 + 50
 
@@ -291,8 +286,7 @@ def gameLoop(startingState):
                     current_time = time.time()
                     if rocket_active and current_time - last_rocket_shot_time >= 1:
                         bullets.append(
-                            RocketBullet(player.x, player.y, player.dir, gameDisplay, display_width, display_height,
-                                         'Assets/Powerups/Rocket.png'))
+                            RocketBullet(player.x, player.y, player.dir, gameDisplay, display_width, display_height))
                         # Spiele den Raketen-Sound ab, wenn eine Rakete abgeschossen wird
                         pygame.mixer.Sound.play(rocket_start)
                         last_rocket_shot_time = current_time  # Aktualisiere die Zeit des letzten Raketenabschusses
@@ -475,18 +469,33 @@ def gameLoop(startingState):
         if intensity < stage * 450:
             intensity += 1
 
-        # Saucer
         if saucer.state == "Dead":
-            if random.randint(0, 6000) <= (intensity * 2) / (stage * 9) and next_level_delay == 0:
+            if random.randint(0, 5000) <= (intensity * 3) / (stage * 10) and next_level_delay == 0:
                 saucer.createSaucer()
-                # Only small saucers >40000
-                if score >= 40000:
-                    saucer.type = "Small"
+                # Wahrscheinlichkeit für kleine Saucer erhöhen, wenn der Score >= 4000 ist
+                if score >= 4000:
+                    if random.random() < 0.75:  # 75% Wahrscheinlichkeit für kleine Saucer
+                        saucer.type = "Small"
+                    else:
+                        saucer.type = "Large"
+                else:
+                    if random.randint(0, 1) == 0:
+                        saucer.type = "Small"
+                    else:
+                        saucer.type = "Large"
         else:
-            # Set saucer targer dir
-            acc = small_saucer_accuracy * 4 / stage
+            # Set saucer target dir
+            if saucer.type == "Small":
+                acc = small_saucer_accuracy * 4 / stage
+            else:
+                acc = large_saucer_accuracy * 2 / stage
             saucer.bdir = math.degrees(
                 math.atan2(-saucer.y + player.y, -saucer.x + player.x) + math.radians(random.uniform(acc, -acc)))
+
+            # ab 4000 Score sollen sich Ausweichmanöver häufiger vorkommen
+            if score >= 1000:
+                if random.randint(0, 100) < 50:
+                    saucer.bdir = random.randint(0, 360)
 
             saucer.updateSaucer()
             saucer.drawSaucer()
@@ -547,7 +556,7 @@ def gameLoop(startingState):
                         b.exploded = True
                         # Erzeugen Sie kleinere Projektile (normale Bullets) in unterschiedlichen zufälligen Richtungen
                         small_projectiles = []
-                        for _ in range(10):  # Anzahl der kleineren Projektile
+                        for _ in range(20):  # Anzahl der kleineren Projektile
 
                             angle = random.uniform(0, 360)
 
@@ -555,31 +564,39 @@ def gameLoop(startingState):
                                 ExplosionBullet(b.x, b.y, angle, b.gameDisplay, b.display_width, b.display_height))
                         Explosion_bullets.extend(small_projectiles)  # Verwende die Liste explosion_bullets
 
-
-
             # Check collision w/ player
             if isColliding(saucer.x, saucer.y, player.x, player.y, saucer.size):
                 if player_state != "Died":
+                    shield_active = False
+                    for power_up in active_powerups:
+                        if isinstance(power_up, Shield) and power_up.active:
+                            shield_active = True
+                            break
+                    if not shield_active:
+                        player_pieces.append(
+                            DeadPlayer(player.x, player.y, 5 * player_size / (2 * math.cos(math.atan(1 / 3))),
+                                       gameDisplay))
+                        player_pieces.append(
+                            DeadPlayer(player.x, player.y, 5 * player_size / (2 * math.cos(math.atan(1 / 3))),
+                                       gameDisplay))
+                        player_pieces.append(DeadPlayer(player.x, player.y, player_size, gameDisplay))
+
+                        player_state = "Died"
+                        player_dying_delay = 30
+                        player_invi_dur = 120
+                        player.killPlayer()
+
+                        if live != 0:
+                            live -= 1
+                        else:
+                            gameState = "Game Over"
+
+                        # Play SFX
+                        pygame.mixer.Sound.play(snd_bangL)
                     # Create ship fragments
-                    player_pieces.append(
-                        DeadPlayer(player.x, player.y, 5 * player_size / (2 * math.cos(math.atan(1 / 3))), gameDisplay))
-                    player_pieces.append(
-                        DeadPlayer(player.x, player.y, 5 * player_size / (2 * math.cos(math.atan(1 / 3))), gameDisplay))
-                    player_pieces.append(DeadPlayer(player.x, player.y, player_size, gameDisplay))
-
-                    # Kill player
-                    player_state = "Died"
-                    player_dying_delay = 30
-                    player_invi_dur = 120
-                    player.killPlayer()
-
-                    if live != 0:
-                        live -= 1
                     else:
-                        gameState = "Game Over"
-
-                    # Play SFX
-                    pygame.mixer.Sound.play(snd_bangL)
+                        #der Spieler soll nicht sterben und der Colisionsound soll abgespielt werden
+                        pygame.mixer.Sound.play(collision_sound)
 
             # Saucer's bullets
             for b in saucer.bullets:
@@ -667,8 +684,8 @@ def gameLoop(startingState):
 
             # Wenn das Rocket-Power-Up aktiv ist und die Kugel eine normale Bullet ist, ändern Sie sie in eine RocketBullet
             if rocket_active and isinstance(b, Bullet) and not isinstance(b, RocketBullet):
-                rocket_bullet = RocketBullet(b.x, b.y, b.dir, b.gameDisplay, b.display_width, b.display_height,
-                                             'Assets/Powerups/Rocket.png')
+                rocket_bullet = RocketBullet(b.x, b.y, b.dir, b.gameDisplay, b.display_width, b.display_height
+                                             )
                 bullets.append(rocket_bullet)
                 bullets.remove(b)
                 b = rocket_bullet
@@ -704,7 +721,7 @@ def gameLoop(startingState):
                         b.exploded = True
                         # Erzeugen Sie kleinere Projektile (normale Bullets) in unterschiedlichen zufälligen Richtungen
                         small_projectiles = []
-                        for _ in range(10):  # Anzahl der kleineren Projektile
+                        for _ in range(20):  # Anzahl der kleineren Projektile
                             #die Projektile sollen in 10 unterschiiedliche Richtungen fliegen
                             angle = random.uniform(0, 360)
 

@@ -21,7 +21,7 @@ class Bullet:
         self.y += self.bullet_speed * math.sin(self.dir * math.pi / 180)
 
         # Drawing
-        pygame.draw.circle(self.gameDisplay, self.white, (int(self.x), int(self.y)), 3)
+        self.drawBullet()
 
         # Wrapping
         if self.x > self.display_width:
@@ -33,42 +33,33 @@ class Bullet:
         elif self.y < 0:
             self.y = self.display_height
         self.life -= 1
+
+    def drawBullet(self):
+        pygame.draw.circle(self.gameDisplay, self.white, (int(self.x), int(self.y)), 3)
 
 
 class RocketBullet(Bullet):
-    def __init__(self, x, y, direction, gameDisplay, display_width, display_height, image_file):
+    def __init__(self, x, y, direction, gameDisplay, display_width, display_height):
         super().__init__(x, y, direction, gameDisplay, display_width, display_height)
-        self.image = pygame.image.load(image_file)  # Laden des Raketenbildes
-        self.image = pygame.transform.scale(self.image, (20, 40))  # Skalieren des Bildes
-        self.rect = self.image.get_rect(center=(self.x, self.y))
-        self.exploded = False
         self.bullet_speed = 10  # Reduzierte Geschwindigkeit der Rakete
+        self.flame_colors = [(255, 255, 0), (255, 165, 0), (255, 0, 0)]  # Gelb, Orange, Rot für die Flamme
 
-    def updateBullet(self):
-        # Bewegen Sie die Rakete
-        self.x += self.bullet_speed * math.cos(self.dir * math.pi / 180)
-        self.y += self.bullet_speed * math.sin(self.dir * math.pi / 180)
-
-        # Aktualisieren Sie das Rechteck der Rakete
-        self.rect.center = (self.x, self.y)
-
-        #Dder Obere Rand des bildes der Rakete soll immer in Schussrichtung zeigen
-        rotated_image = pygame.transform.rotate(self.image, -self.dir)
-        rotated_rect = rotated_image.get_rect(center=self.rect.center)
-
+    def drawBullet(self):
         # Zeichnen Sie die Rakete
-        self.gameDisplay.blit(rotated_image, rotated_rect.topleft)
+        projectile_length = 20
+        projectile_width = 5
+        end_x = self.x + projectile_length * math.cos(math.radians(self.dir))
+        end_y = self.y + projectile_length * math.sin(math.radians(self.dir))
+        pygame.draw.line(self.gameDisplay, (0, 0, 0), (self.x, self.y), (end_x, end_y), projectile_width)
 
-        # Wrapping
-        if self.x > self.display_width:
-            self.x = 0
-        elif self.x < 0:
-            self.x = self.display_width
-        elif self.y > self.display_height:
-            self.y = 0
-        elif self.y < 0:
-            self.y = self.display_height
-        self.life -= 1
+        # Zeichnen der Flamme
+        flame_length = 15
+        flame_width = 3
+        flame_end_x = self.x - flame_length * math.cos(math.radians(self.dir))
+        flame_end_y = self.y - flame_length * math.sin(math.radians(self.dir))
+        for color in self.flame_colors:
+            pygame.draw.line(self.gameDisplay, color, (self.x, self.y), (flame_end_x, flame_end_y), flame_width)
+            flame_length -= 5  # Verkleinere die Flamme für den nächsten Farbabschnitt
 
 
 class ExplosionBullet(Bullet):
