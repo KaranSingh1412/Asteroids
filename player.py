@@ -20,7 +20,7 @@ class Player:
         self.player_max_speed = 20
         self.player_size = player_size
         self.white = (255, 255, 255)
-
+        self.active_powerups = []
 
     def updatePlayer(self):
         # Move player
