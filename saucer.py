@@ -42,9 +42,8 @@ class Saucer:
             self.state = "Dead"
 
         # Shooting
-        if self.type == "Large":
-            self.bdir = random.randint(0, 360)
         if self.cd == 0:
+
             self.bullets.append(Bullet(self.x, self.y, self.bdir, self.gameDisplay, self.display_width, self.display_height))
             self.cd = 30
         else:

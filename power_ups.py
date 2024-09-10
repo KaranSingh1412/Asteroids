@@ -46,7 +46,7 @@ class PowerUps:
 
 class Shield(PowerUps):
     def __init__(self, x, y, image_file, ):
-        super().__init__(x, y, 5000, 'Schild')  # Rufen Sie den Konstruktor der Basisklasse auf
+        super().__init__(x, y, 8000, 'Schild')  # Rufen Sie den Konstruktor der Basisklasse auf
         self.is_activated = False
         self.image = pygame.image.load(image_file)  # Laden Sie das Bild
 
@@ -58,9 +58,9 @@ class Shield(PowerUps):
         super().update()
 
 
-class WeaponUpgrade(PowerUps):
+class Rocket(PowerUps):
     def __init__(self, x, y, image_file):
-        super().__init__(x, y, 5000, 'Waffen-Upgrade')
+        super().__init__(x, y, 8000, 'Rocket')
         self.is_activated = False
         self.image = pygame.image.load(image_file)
 
