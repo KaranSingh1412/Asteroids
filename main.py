@@ -1,11 +1,13 @@
 import math
 import os
 import random
+import threading
 import webbrowser  # zum sharen des highscores per mail
 import time
 
 import pygame
 
+from particle import Particle
 import power_ups
 from asteroid import Asteroid
 from bullet import Bullet
@@ -16,6 +18,7 @@ from power_ups import Rocket
 from power_ups import Shield
 from saucer import Saucer
 from bullet import ExplosionBullet
+from server import AsteroidsServer
 
 pygame.init()
 # game music mixer
@@ -30,7 +33,7 @@ black = (0, 0, 0)
 display_width = 1200
 display_height = 800
 
-player_size = 10
+player_size = 15
 player_max_rtspd = 10
 
 small_saucer_accuracy = 10
@@ -118,7 +121,7 @@ def drawText(msg, color, x, y, s, center=True):
 
 # Create a function to handle playing and stopping the music
 def handle_menu_music(gameState):
-    if gameState in ["Menu", "Paused", "Game Over"]:
+    if gameState in ["Menu", "Multiplayer", "Paused", "Game Over"]:
         if not pygame.mixer.get_busy():
             menu_music.play(-1)  # -1 means loop infinitely
     else:
@@ -202,7 +205,7 @@ def draw_menu_screen():
     update_scrolling_background()
     buttons = []
     button_y_start = display_height / 2 - 1.5 * button_height
-    for i, button_text in enumerate(["Play (Enter)", "Multiplayer (m)", "Quit (q)"]):
+    for i, button_text in enumerate(["Play (Enter)", "Remote Controlled (c)", "Quit (q)"]):
         button_x = display_width / 2 - button_width / 2
         button_y = button_y_start + i * (button_height + 10)
         button_rect = pygame.Rect(button_x, button_y, button_width, button_height)
@@ -211,6 +214,18 @@ def draw_menu_screen():
         buttons.append({"text": button_text, "rect": button_rect})
 
     return buttons
+
+def draw_connection_menu(server):
+    update_scrolling_background()
+    if server.hasConnection:
+        drawText(f"Connected to {server.connectedClient}", white, display_width / 2, display_height / 2, 50)
+    else:
+        drawText("Waiting for connection...", white, display_width / 2, display_height / 2, 50)
+
+def start_server_thread(server):
+    server_thread = threading.Thread(target=server.start_server)
+    server_thread.daemon = True
+    server_thread.start()
 
 def gameLoop(startingState):
     # Init variables
@@ -224,6 +239,7 @@ def gameLoop(startingState):
     next_level_delay = 0
     bullet_capacity = 4
     bullets = []
+    particles = []
     asteroids = []
     Explosion_bullets = []
     powerups = []
@@ -239,6 +255,7 @@ def gameLoop(startingState):
     saucer: Saucer = Saucer(display_width, display_height, gameDisplay)
     high_score = read_high_score()
     last_rocket_shot_time = 0
+    server = None
 
     # Main loop
     while gameState != "Exit":
@@ -251,12 +268,24 @@ def gameLoop(startingState):
                 if event.type == pygame.QUIT:
                     reset_high_score()
                     gameState = "Exit"
-                if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
-                    gameState = "Playing"
-                    handle_menu_music(gameState)
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_RETURN:
+                        gameState = "Playing"
+                        handle_menu_music(gameState)
+                    if event.key == pygame.K_c:
+                        gameState = "Remote"
+                        if not server:
+                            server = AsteroidsServer()
+                            start_server_thread(server)
 
             pygame.display.update()
             timer.tick(5)
+
+        while gameState == "Remote":
+            draw_connection_menu(server)
+            if server and server.hasConnection:
+                if server.received_data == "Play":
+                    gameState = "Playing"
 
         # highscore checker
         if score > high_score:
@@ -277,22 +306,31 @@ def gameLoop(startingState):
                     # start menu music
                     handle_menu_music(gameState)
 
-                # elif gameState == "Paused":
-                #     if event.key == pygame.K_r:
-                #         gameState = "Exit"
-                #         gameLoop("Playing")
-                #     elif event.key == pygame.K_q:
-                #         gameState = "Menu"
-                #         reset_high_score()  # Reset high score when exiting the game
-                #         pygame.quit()
-                #         quit()
+                rocket_active = None
+
+                #gamecontrols
+                # if server and server.hasConnection and server.received_data:
+                #     if server.received_data.__contains__('LEFT'):
+                #         player.rtspd = -player_max_rtspd
+                #     elif server.received_data.__contains__('RIGHT'):
+                #         player.rtspd = player_max_rtspd
+                #     elif server.received_data == 'UP':
+                #         player.thrust = True
+                #     elif server.received_data == 'SHOOT':
+                #         rocket_active = False
+                #         for power_up in player.active_powerups:
+                #             if isinstance(power_up, Rocket) and power_up.active:
+                #                 rocket_active = True
+                #                 break
+                #     server.received_data = None
+                # else:
                 if event.key == pygame.K_UP:
                     player.thrust = True
-                if event.key == pygame.K_LEFT:
+                elif event.key == pygame.K_LEFT:
                     player.rtspd = -player_max_rtspd
-                if event.key == pygame.K_RIGHT:
+                elif event.key == pygame.K_RIGHT:
                     player.rtspd = player_max_rtspd
-                if event.key == pygame.K_SPACE and player_dying_delay == 0 and len(bullets) < bullet_capacity:
+                elif event.key == pygame.K_SPACE and player_dying_delay == 0 and len(bullets) < bullet_capacity:
                     rocket_active = False
                     for power_up in player.active_powerups:
                         if isinstance(power_up, Rocket) and power_up.active:
@@ -324,6 +362,8 @@ def gameLoop(startingState):
                     player.thrust = False
                 if event.key == pygame.K_LEFT or event.key == pygame.K_RIGHT:
                     player.rtspd = 0
+
+
             # Mousebutton clickable
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if gameState == "Paused" or gameState == "Game Over":
@@ -759,10 +799,18 @@ def gameLoop(startingState):
 
             # Destroying bullets
             if b.life <= 0:
+                for _ in range(20):
+                    particle = Particle(b.x, b.y, gameDisplay, display_width, display_height)
+                    particles.append(particle)
                 try:
                     bullets.remove(b)
                 except ValueError:
                     continue
+                
+        for particle in particles[:]:
+            particle.update()
+            if not particle.is_alive():
+                particles.remove(particle)
 
         # ExplosionBullets
         for eb in Explosion_bullets:

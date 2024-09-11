@@ -8,7 +8,7 @@ class PowerUps:
         self.y = y
         self.active = False
         self.timer = 0
-        self.radius = 20
+        self.radius = 40
         self.image = None
         self.duration = duration
         self.name = name
@@ -48,7 +48,8 @@ class Shield(PowerUps):
     def __init__(self, x, y, image_file, ):
         super().__init__(x, y, 8000, 'Schild')  # Rufen Sie den Konstruktor der Basisklasse auf
         self.is_activated = False
-        self.image = pygame.image.load(image_file)  # Laden Sie das Bild
+        self.image = pygame.image.load(image_file)
+        self.image = pygame.transform.scale(self.image, (40, 40))  # Laden Sie das Bild
 
     def activate(self):
         super().activate()  # Rufen Sie die ursprüngliche activate-Methode auf
@@ -63,6 +64,7 @@ class Rocket(PowerUps):
         super().__init__(x, y, 8000, 'Rocket')
         self.is_activated = False
         self.image = pygame.image.load(image_file)
+        self.image = pygame.transform.scale(self.image, (40, 40))
 
     def activate(self):
         super().activate()

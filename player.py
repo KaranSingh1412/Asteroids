@@ -22,6 +22,11 @@ class Player:
         self.white = (255, 255, 255)
         self.active_powerups = []
 
+        # Load the spaceship sprite and scale it up by 1.5x the player size
+        self.sprite = pygame.image.load('Assets/spaceship.png')
+        scaled_size = int(self.player_size * 1.5)
+        self.sprite = pygame.transform.scale(self.sprite, (scaled_size, scaled_size))
+
     def updatePlayer(self):
         # Move player
         speed = math.sqrt(self.hspeed**2 + self.vspeed**2)
@@ -66,38 +71,12 @@ class Player:
         self.dir += self.rtspd
 
     def drawPlayer(self):
-        a = math.radians(self.dir)
-        x = self.x
-        y = self.y
-        s = self.player_size
-        t = self.thrust
-        # Draw player
-        pygame.draw.line(self.gameDisplay, self.white,
-                         (x - (s * math.sqrt(130) / 12) * math.cos(math.atan(7 / 9) + a),
-                          y - (s * math.sqrt(130) / 12) * math.sin(math.atan(7 / 9) + a)),
-                         (x + s * math.cos(a), y + s * math.sin(a)))
-
-        pygame.draw.line(self.gameDisplay, self.white,
-                         (x - (s * math.sqrt(130) / 12) * math.cos(math.atan(7 / 9) - a),
-                          y + (s * math.sqrt(130) / 12) * math.sin(math.atan(7 / 9) - a)),
-                         (x + s * math.cos(a), y + s * math.sin(a)))
-
-        pygame.draw.line(self.gameDisplay, self.white,
-                         (x - (s * math.sqrt(2) / 2) * math.cos(a + math.pi / 4),
-                          y - (s * math.sqrt(2) / 2) * math.sin(a + math.pi / 4)),
-                         (x - (s * math.sqrt(2) / 2) * math.cos(-a + math.pi / 4),
-                          y + (s * math.sqrt(2) / 2) * math.sin(-a + math.pi / 4)))
-        if t:
-            pygame.draw.line(self.gameDisplay, self.white,
-                             (x - s * math.cos(a),
-                              y - s * math.sin(a)),
-                             (x - (s * math.sqrt(5) / 4) * math.cos(a + math.pi / 6),
-                              y - (s * math.sqrt(5) / 4) * math.sin(a + math.pi / 6)))
-            pygame.draw.line(self.gameDisplay, self.white,
-                             (x - s * math.cos(-a),
-                              y + s * math.sin(-a)),
-                             (x - (s * math.sqrt(5) / 4) * math.cos(-a + math.pi / 6),
-                              y + (s * math.sqrt(5) / 4) * math.sin(-a + math.pi / 6)))
+        # Rotate the sprite based on the player's direction, and subtract 90 degrees to fix the rotation
+        rotated_sprite = pygame.transform.rotate(self.sprite, -self.dir - 90)
+        sprite_rect = rotated_sprite.get_rect(center=(self.x, self.y))
+        
+        # Draw the rotated sprite on the game display
+        self.gameDisplay.blit(rotated_sprite, sprite_rect.topleft)
 
     def killPlayer(self):
         # Reset the player

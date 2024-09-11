@@ -16,7 +16,6 @@ class Saucer:
         self.cd = 0
         self.bdir = 0
         self.soundDelay = 0
-        self.white = (255, 255, 255)
         self.gameDisplay = gameDisplay
         self.display_width = display_width
         self.display_height = display_height
@@ -24,8 +23,15 @@ class Saucer:
         self.snd_saucerB = pygame.mixer.Sound("Sounds/saucerBig.wav")
         self.snd_saucerS = pygame.mixer.Sound("Sounds/saucerSmall.wav")
 
+        # Load the saucer image
+        self.saucer_image_original = pygame.image.load("Assets/saucer.png")
+
+        # Adjust sizes for half the original scale
+        self.saucer_image_large = pygame.transform.scale(self.saucer_image_original, (50, 29))  # Half-sized large saucer
+        self.saucer_image_small = pygame.transform.scale(self.saucer_image_original, (25, 14))  # Half-sized small saucer
+
     def updateSaucer(self):
-        # Move player
+        # Move saucer
         self.x += self.saucer_speed * math.cos(self.dir * math.pi / 180)
         self.y += self.saucer_speed * math.sin(self.dir * math.pi / 180)
 
@@ -43,7 +49,6 @@ class Saucer:
 
         # Shooting
         if self.cd == 0:
-
             self.bullets.append(Bullet(self.x, self.y, self.bdir, self.gameDisplay, self.display_width, self.display_height))
             self.cd = 30
         else:
@@ -57,7 +62,6 @@ class Saucer:
 
     def createSaucer(self):
         # Create saucer
-        # Set state
         self.state = "Alive"
 
         # Set random position
@@ -67,10 +71,10 @@ class Saucer:
         # Set random type
         if random.randint(0, 1) == 0:
             self.type = "Large"
-            self.size = 20
+            self.size = 50  # Size for half-sized large saucer
         else:
             self.type = "Small"
-            self.size = 10
+            self.size = 25  # Size for half-sized small saucer
 
         # Create random direction
         if self.x == 0:
@@ -84,19 +88,13 @@ class Saucer:
         self.cd = 0
 
     def drawSaucer(self):
-        # Draw saucer
-        pygame.draw.polygon(self.gameDisplay, self.white,
-                            ((self.x + self.size, self.y),
-                             (self.x + self.size / 2, self.y + self.size / 3),
-                             (self.x - self.size / 2, self.y + self.size / 3),
-                             (self.x - self.size, self.y),
-                             (self.x - self.size / 2, self.y - self.size / 3),
-                             (self.x + self.size / 2, self.y - self.size / 3)), 1)
-        pygame.draw.line(self.gameDisplay, self.white,
-                         (self.x - self.size, self.y),
-                         (self.x + self.size, self.y))
-        pygame.draw.polygon(self.gameDisplay, self.white,
-                            ((self.x - self.size / 2, self.y - self.size / 3),
-                             (self.x - self.size / 3, self.y - 2 * self.size / 3),
-                             (self.x + self.size / 3, self.y - 2 * self.size / 3),
-                             (self.x + self.size / 2, self.y - self.size / 3)), 1)
+        if self.state == "Alive":
+            if self.type == "Large":
+                # Use half-sized large saucer sprite
+                rotated_saucer = pygame.transform.rotate(self.saucer_image_large, -self.dir)
+            else:
+                # Use half-sized small saucer sprite
+                rotated_saucer = pygame.transform.rotate(self.saucer_image_small, -self.dir)
+
+            saucer_rect = rotated_saucer.get_rect(center=(self.x, self.y))
+            self.gameDisplay.blit(rotated_saucer, saucer_rect)
