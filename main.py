@@ -78,6 +78,7 @@ menu_music = pygame.mixer.Sound("Music/1.IntoTheSpaceship.wav")
 collision_sound = pygame.mixer.Sound("Sounds/Collision.A.wav")
 rocket_expl = pygame.mixer.Sound("Sounds/Rocket.Expl.wav")
 rocket_start = pygame.mixer.Sound("Sounds/Rocket_start.wav")
+Powerupactive = pygame.mixer.Sound("Sounds/Powerupactive.wav")
 
 # Import Background Image Menu
 background_image = pygame.image.load(
@@ -471,12 +472,14 @@ def gameLoop(startingState):
             if power_up.collides_with_player(player):  # Übergeben Sie das 'player'-Objekt
                 if not power_up.is_activated:  # Überprüfen Sie, ob das Power-Up bereits aktiviert wurde
                     power_up.activate()  # Aktivieren Sie das Power-Up
-                    player.active_powerups.append(power_up)  # Fügen Sie das Power-Up zur Liste der aktiven Power-Ups hinzu
+
+                    player.active_powerups.append(power_up)
+
                     print(player.active_powerups)
-                    powerups.remove(power_up)  # Entfernen Sie das Power-Up aus der Liste
+                    powerups.remove(power_up)
         for power_up in player.active_powerups.copy():  # Verwenden Sie .copy() um über eine Kopie der Liste zu iterieren
             power_up.update()  # Aktualisieren Sie den Zustand des Power-Ups
-
+            Powerupactive.play()
             # Überprüfen Sie, ob das Power-Up noch aktiv ist
             if not power_up.active:
                 # Wenn das Power-Up nicht mehr aktiv ist, entfernen Sie es aus der Liste
@@ -644,7 +647,7 @@ def gameLoop(startingState):
                         new_power_up = power_ups.Shield(saucer.x, saucer.y, 'Assets/Powerups/Shield.png')
                         powerups.append(new_power_up)
                     elif power_up_type == 'Rocket':
-                        new_power_up = power_ups.Rocket(saucer.x, saucer.y, 'Assets/Powerups/Rocket.png')
+                        new_power_up = power_ups.Rocket(saucer.x, saucer.y, 'Assets/Powerups/Rocket2.png')
                         powerups.append(new_power_up)
 
                     # Play SFX
