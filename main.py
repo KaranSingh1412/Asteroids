@@ -226,7 +226,17 @@ def draw_connection_menu(server):
     if server.hasConnection:
         drawText(f"Connected to {server.connectedClient}", white, display_width / 2, display_height / 2, 50)
     else:
-        drawText("Waiting for connection...", white, display_width / 2, display_height / 2, 50)
+        drawText("Waiting for connection...", white, display_width / 2, display_height / 2 - 50, 50)
+        drawText(f"IP Address: {server.get_local_ip()}", white, display_width / 2, display_height / 2 + 50, 40)
+        drawText(f"Port: {server.TCP_PORT}", white, display_width / 2, display_height / 2 + 100, 40)
+        
+    # Button am unteren Bildschirmrand
+    button_y = display_height - button_height - 20
+    button_x = display_width / 2 - button_width / 2
+    button_rect = pygame.Rect(button_x, button_y, button_width, button_height)
+    pygame.draw.rect(gameDisplay, white, button_rect, 2)
+    drawText('Back (b)', white, display_width / 2, button_y + button_height / 2, 30)
+        
 
 def start_server_thread(server):
     server_thread = threading.Thread(target=server.start_server)
@@ -280,18 +290,46 @@ def gameLoop(startingState):
                         handle_menu_music(gameState)
                     if event.key == pygame.K_c:
                         gameState = "Remote"
-                        if not server:
-                            server = AsteroidsServer()
-                            start_server_thread(server)
+                        # if not server:
+                        #     server = AsteroidsServer()
+                        #     start_server_thread(server)
 
             pygame.display.update()
             timer.tick(5)
+        
+        server = None
+        if gameState == "Remote":
+            if not server:
+                server = AsteroidsServer()
+                start_server_thread(server)
 
-        while gameState == "Remote":
-            draw_connection_menu(server)
-            if server and server.hasConnection:
-                if server.received_data == "Play":
-                    gameState = "Playing"
+            while gameState == "Remote":
+                draw_connection_menu(server)
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        reset_high_score()
+                        gameState = "Exit"
+                        server.stop_server()
+                    if event.type == pygame.KEYDOWN:
+                        if event.key == pygame.K_b:
+                            gameState = "Menu"
+                            handle_menu_music(gameState)
+                            server.stop_server()
+
+                if server and server.hasConnection:
+                    if server.received_data == "Play":
+                        gameState = "Playing"
+                        server.send_signal("Done")
+                
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        if server:
+                            server.stop_server()
+                        gameState = "Exit"
+                    # Fügen Sie hier weitere Ereignisbehandlungen hinzu
+
+                pygame.display.update()
+                timer.tick(5)
 
         # highscore checker
         if score > high_score:
@@ -303,6 +341,21 @@ def gameLoop(startingState):
             if event.type == pygame.QUIT:
                 reset_high_score()  # Reset high score when exiting the game
                 gameState = "Exit"
+            # if server and server.hasConnection and server.received_data:
+            # if server and server.hasConnection:
+            #     if server.received_data.__contains__('LEFT'):
+            #         player.rtspd = -player_max_rtspd
+            #     elif server.received_data.__contains__('RIGHT'):
+            #         player.rtspd = player_max_rtspd
+            #     elif server.received_data.__contains__('UP'):
+            #         player.thrust = True
+            #     elif server.received_data.__contains__('SHOOT'):
+            #         rocket_active = False
+            #         for power_up in player.active_powerups:
+            #             if isinstance(power_up, Rocket) and power_up.active:
+            #                 rocket_active = True
+            #                 break
+            #     server.received_data = None
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE or event.key == pygame.K_p:
                     if gameState == "Playing":
@@ -315,21 +368,6 @@ def gameLoop(startingState):
                 rocket_active = None
 
                 #gamecontrols
-                # if server and server.hasConnection and server.received_data:
-                #     if server.received_data.__contains__('LEFT'):
-                #         player.rtspd = -player_max_rtspd
-                #     elif server.received_data.__contains__('RIGHT'):
-                #         player.rtspd = player_max_rtspd
-                #     elif server.received_data == 'UP':
-                #         player.thrust = True
-                #     elif server.received_data == 'SHOOT':
-                #         rocket_active = False
-                #         for power_up in player.active_powerups:
-                #             if isinstance(power_up, Rocket) and power_up.active:
-                #                 rocket_active = True
-                #                 break
-                #     server.received_data = None
-                # else:
                 if event.key == pygame.K_UP:
                     player.thrust = True
                 elif event.key == pygame.K_LEFT:
