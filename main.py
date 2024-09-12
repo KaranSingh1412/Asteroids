@@ -80,6 +80,11 @@ rocket_expl = pygame.mixer.Sound("Sounds/Rocket.Expl.wav")
 rocket_start = pygame.mixer.Sound("Sounds/Rocket_start.wav")
 Powerupactive = pygame.mixer.Sound("Sounds/Powerupactive.wav")
 
+Powerupactive.set_volume(0.5)
+menu_music.set_volume(0.8)
+
+
+
 # Import Background Image Menu
 background_image = pygame.image.load(
     'Assets/backgrounds/1920-space-wallpaper-banner-background-stunning-view-of-a-cosmic-galaxy-with-planets-and-space-objects-elements-of-this-image-furnished-by-nasa-generate-ai.jpg')

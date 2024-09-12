@@ -23,6 +23,10 @@ class Saucer:
         self.snd_saucerB = pygame.mixer.Sound("Sounds/saucerBig.wav")
         self.snd_saucerS = pygame.mixer.Sound("Sounds/saucerSmall.wav")
 
+        #Lautstärke von Saucer Sounds anpassen
+        self.snd_saucerB.set_volume(0.5)
+        self.snd_saucerS.set_volume(0.5)
+
         # Load the saucer image
         self.saucer_image_original = pygame.image.load("Assets/saucer.png")
 
