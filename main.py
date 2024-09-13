@@ -328,6 +328,7 @@ def gameLoop(startingState):
                         if server.received_data == "Play":
                             gameState = "Playing"
                             server.send_signal("Done")
+                            server.received_data = None
                 
                 for event in pygame.event.get():
                     if event.type == pygame.QUIT:
@@ -428,22 +429,45 @@ def gameLoop(startingState):
                                 quit()
         if server and server.hasConnection:
             if server.received_data:
-                try:
-                    # Parse the received data from the controller
-                    control_data = json.loads(server.received_data)
-                    move_data = control_data.get('move', [0, 0])
-                    move_x, move_y = move_data[0], move_data[1]
+                if server.received_data.__contains__("move"):
+                    try:
+                        # Parse the received data from the controller
+                        control_data = json.loads(server.received_data)
+                        move_data = control_data.get('move')
+                        move_x, move_y = move_data[0], move_data[1]
 
-                    # Calculate movement direction and thrust based on the joystick input
-                    if move_x != 0 or move_y != 0:
-                        player.dir = math.degrees(math.atan2(move_y, move_x))
-                        player.thrust = True
-                    else:
-                        player.thrust = False
+                        # Calculate movement direction and thrust based on the joystick input
+                        if move_x != 0 or move_y != 0:
+                            player.dir = math.degrees(math.atan2(move_y, move_x))
+                            player.thrust = True
+                            player.fd_fric = 0.2
+                            player.bd_fric = 0.2
+                        else:
+                            player.thrust = False
 
-                except json.JSONDecodeError:
-                    print("Error decoding JSON from remote controller")
+                        server.received_data = None
+                    except json.JSONDecodeError:
+                        print("Error decoding JSON from remote controller")
+                elif server.received_data.__contains__('shoot'):
+                    rocket_active = False
+                    for power_up in player.active_powerups:
+                        if isinstance(power_up, Rocket) and power_up.active:
+                            rocket_active = True
+                            break
 
+                    current_time = time.time()
+                    if rocket_active and current_time - last_rocket_shot_time >= 1:
+                        bullets.append(
+                            RocketBullet(player.x, player.y, player.dir, gameDisplay, display_width, display_height))
+                        # Spiele den Raketen-Sound ab, wenn eine Rakete abgeschossen wird
+                        pygame.mixer.Sound.play(rocket_start)
+                        last_rocket_shot_time = current_time  # Aktualisiere die Zeit des letzten Raketenabschusses
+                    elif not rocket_active:
+                        bullets.append(
+                            Bullet(player.x, player.y, player.dir, gameDisplay, display_width, display_height))
+                        # Spiele den Bullet-Sound ab, wenn eine normale Bullet abgeschossen wird
+                        pygame.mixer.Sound.play(snd_fire)
+                    server.received_data = None
         # Update player
         player.updatePlayer()
 
