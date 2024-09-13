@@ -84,8 +84,6 @@ Powerupactive = pygame.mixer.Sound("Sounds/Powerupactive.wav")
 Powerupactive.set_volume(0.5)
 menu_music.set_volume(0.8)
 
-
-
 # Import Background Image Menu
 background_image = pygame.image.load(
     'Assets/backgrounds/1920-space-wallpaper-banner-background-stunning-view-of-a-cosmic-galaxy-with-planets-and-space-objects-elements-of-this-image-furnished-by-nasa-generate-ai.jpg')
@@ -213,6 +211,7 @@ def share_high_score(score):
     mailto_link = f"mailto:?subject={subject}&body={body}"
     webbrowser.open(mailto_link)
 
+
 def draw_menu_screen():
     update_scrolling_background()
     buttons = []
@@ -227,6 +226,7 @@ def draw_menu_screen():
 
     return buttons
 
+
 def draw_connection_menu(server):
     update_scrolling_background()
     if server.hasConnection:
@@ -235,19 +235,20 @@ def draw_connection_menu(server):
         drawText("Waiting for connection...", white, display_width / 2, display_height / 2 - 50, 50)
         drawText(f"IP Address: {server.get_local_ip()}", white, display_width / 2, display_height / 2 + 50, 40)
         drawText(f"Port: {server.TCP_PORT}", white, display_width / 2, display_height / 2 + 100, 40)
-        
+
     # Button am unteren Bildschirmrand
     button_y = display_height - button_height - 20
     button_x = display_width / 2 - button_width / 2
     button_rect = pygame.Rect(button_x, button_y, button_width, button_height)
     pygame.draw.rect(gameDisplay, white, button_rect, 2)
     drawText('Back (b)', white, display_width / 2, button_y + button_height / 2, 30)
-        
+
 
 def start_server_thread(server):
     server_thread = threading.Thread(target=server.start_server)
     server_thread.daemon = True
     server_thread.start()
+
 
 def gameLoop(startingState):
     # Init variables
@@ -399,7 +400,6 @@ def gameLoop(startingState):
                 if event.key == pygame.K_LEFT or event.key == pygame.K_RIGHT:
                     player.rtspd = 0
 
-
             # Mousebutton clickable
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if gameState == "Paused" or gameState == "Game Over":
@@ -453,7 +453,6 @@ def gameLoop(startingState):
         elif hyperspace == 0:
             player_state = "Alive"
 
-
         # Reset display
         gameDisplay.fill(black)
 
@@ -486,6 +485,7 @@ def gameLoop(startingState):
             if power_up.collides_with_player(player):  # Übergeben Sie das 'player'-Objekt
                 if not power_up.is_activated:  # Überprüfen Sie, ob das Power-Up bereits aktiviert wurde
                     power_up.activate()  # Aktivieren Sie das Power-Up
+                    Powerupactive.play()
 
                     player.active_powerups.append(power_up)
 
@@ -493,7 +493,7 @@ def gameLoop(startingState):
                     powerups.remove(power_up)
         for power_up in player.active_powerups.copy():  # Verwenden Sie .copy() um über eine Kopie der Liste zu iterieren
             power_up.update()  # Aktualisieren Sie den Zustand des Power-Ups
-            Powerupactive.play()
+
             # Überprüfen Sie, ob das Power-Up noch aktiv ist
             if not power_up.active:
                 # Wenn das Power-Up nicht mehr aktiv ist, entfernen Sie es aus der Liste
@@ -866,7 +866,7 @@ def gameLoop(startingState):
                     bullets.remove(b)
                 except ValueError:
                     continue
-                
+
         for particle in particles[:]:
             particle.update()
             if not particle.is_alive():
