@@ -16,7 +16,7 @@ class Player:
         self.display_width = display_width
         self.display_height = display_height
         self.fd_fric = 0.5
-        self.bd_fric = 0.1
+        self.bd_fric = 0.5
         self.player_max_speed = 20
         self.player_size = player_size
         self.white = (255, 255, 255)
@@ -24,7 +24,7 @@ class Player:
 
         # Load the spaceship sprite and scale it up by 1.5x the player size
         self.sprite = pygame.image.load('Assets/spaceship.png')
-        scaled_size = int(self.player_size * 1.5)
+        scaled_size = int(self.player_size * 2)
         self.sprite = pygame.transform.scale(self.sprite, (scaled_size, scaled_size))
 
     def updatePlayer(self):

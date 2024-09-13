@@ -4,6 +4,7 @@ import random
 import threading
 import webbrowser  # zum sharen des highscores per mail
 import time
+import json
 
 import pygame
 
@@ -127,6 +128,7 @@ def drawText(msg, color, x, y, s, center=True):
 
 # Create a function to handle playing and stopping the music
 def handle_menu_music(gameState):
+    # return
     if gameState in ["Menu", "Multiplayer", "Paused", "Game Over"]:
         if not pygame.mixer.get_busy():
             menu_music.play(-1)  # -1 means loop infinitely
@@ -135,6 +137,10 @@ def handle_menu_music(gameState):
 
 
 # Create function to check for collision
+def isCollidingSaucer(x1, y1, x2, y2, r1, r2):
+    distance = math.sqrt((x1 - x2)**2 + (y1 - y2)**2)
+    return distance < (r1 + r2)
+
 def isColliding(x, y, xTo, yTo, size):
     if x > xTo - size and x < xTo + size and y > yTo - size and y < yTo + size:
         return True
@@ -297,7 +303,7 @@ def gameLoop(startingState):
             pygame.display.update()
             timer.tick(5)
         
-        server = None
+        # server = None
         if gameState == "Remote":
             if not server:
                 server = AsteroidsServer()
@@ -317,9 +323,10 @@ def gameLoop(startingState):
                             server.stop_server()
 
                 if server and server.hasConnection:
-                    if server.received_data == "Play":
-                        gameState = "Playing"
-                        server.send_signal("Done")
+                    if server.received_data:
+                        if server.received_data == "Play":
+                            gameState = "Playing"
+                            server.send_signal("Done")
                 
                 for event in pygame.event.get():
                     if event.type == pygame.QUIT:
@@ -341,21 +348,6 @@ def gameLoop(startingState):
             if event.type == pygame.QUIT:
                 reset_high_score()  # Reset high score when exiting the game
                 gameState = "Exit"
-            # if server and server.hasConnection and server.received_data:
-            # if server and server.hasConnection:
-            #     if server.received_data.__contains__('LEFT'):
-            #         player.rtspd = -player_max_rtspd
-            #     elif server.received_data.__contains__('RIGHT'):
-            #         player.rtspd = player_max_rtspd
-            #     elif server.received_data.__contains__('UP'):
-            #         player.thrust = True
-            #     elif server.received_data.__contains__('SHOOT'):
-            #         rocket_active = False
-            #         for power_up in player.active_powerups:
-            #             if isinstance(power_up, Rocket) and power_up.active:
-            #                 rocket_active = True
-            #                 break
-            #     server.received_data = None
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE or event.key == pygame.K_p:
                     if gameState == "Playing":
@@ -434,6 +426,23 @@ def gameLoop(startingState):
                             elif action == "Exit":
                                 pygame.quit()
                                 quit()
+        if server and server.hasConnection:
+            if server.received_data:
+                try:
+                    # Parse the received data from the controller
+                    control_data = json.loads(server.received_data)
+                    move_data = control_data.get('move', [0, 0])
+                    move_x, move_y = move_data[0], move_data[1]
+
+                    # Calculate movement direction and thrust based on the joystick input
+                    if move_x != 0 or move_y != 0:
+                        player.dir = math.degrees(math.atan2(move_y, move_x))
+                        player.thrust = True
+                    else:
+                        player.thrust = False
+
+                except json.JSONDecodeError:
+                    print("Error decoding JSON from remote controller")
 
         # Update player
         player.updatePlayer()
@@ -614,7 +623,7 @@ def gameLoop(startingState):
 
             # Check for collision w/ asteroid
             for a in asteroids:
-                if isColliding(saucer.x, saucer.y, a.x, a.y, a.size + saucer.size):
+                if isCollidingSaucer(saucer.x, saucer.y, a.x, a.y, saucer.size/2, a.size/2):
                     # Set saucer state
                     saucer.state = "Dead"
 
@@ -660,6 +669,9 @@ def gameLoop(startingState):
 
                     # Remove bullet
                     bullets.remove(b)
+                    for _ in range(10):
+                        particle = Particle(b.x, b.y, gameDisplay, display_width, display_height)
+                        particles.append(particle)
 
                     # Überprüfen, ob die Kugel eine RocketBullet ist und explodiert
                     if isinstance(b, RocketBullet):
@@ -740,7 +752,7 @@ def gameLoop(startingState):
                         break
 
                 for b in saucer.bullets:
-                    if isColliding(player.x, player.y, b.x, b.y, 5):
+                    if isColliding(player.x, player.y, b.x, b.y, player.player_size):
                         if player_state != "Died":
                             # Überprüfen Sie, ob ein Schild-Powerup aktiv ist
                             shield_active = False
@@ -796,8 +808,7 @@ def gameLoop(startingState):
 
             # Wenn das Rocket-Power-Up aktiv ist und die Kugel eine normale Bullet ist, ändern Sie sie in eine RocketBullet
             if rocket_active and isinstance(b, Bullet) and not isinstance(b, RocketBullet):
-                rocket_bullet = RocketBullet(b.x, b.y, b.dir, b.gameDisplay, b.display_width, b.display_height
-                                             )
+                rocket_bullet = RocketBullet(b.x, b.y, b.dir, b.gameDisplay, b.display_width, b.display_height)
                 bullets.append(rocket_bullet)
                 bullets.remove(b)
                 b = rocket_bullet
@@ -825,6 +836,9 @@ def gameLoop(startingState):
                     asteroids.remove(a)
                     if b in bullets:
                         bullets.remove(b)
+                        for _ in range(20):
+                            particle = Particle(b.x, b.y, gameDisplay, display_width, display_height)
+                            particles.append(particle)
 
                     # Überprüfen, ob die Kugel eine RocketBullet ist und explodiert
                     if isinstance(b, RocketBullet):
@@ -845,7 +859,7 @@ def gameLoop(startingState):
 
             # Destroying bullets
             if b.life <= 0:
-                for _ in range(20):
+                for _ in range(10):
                     particle = Particle(b.x, b.y, gameDisplay, display_width, display_height)
                     particles.append(particle)
                 try:
