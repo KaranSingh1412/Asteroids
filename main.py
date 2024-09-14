@@ -40,7 +40,7 @@ player_max_rtspd = 10
 small_saucer_accuracy = 10
 large_saucer_accuracy = 5
 
-button_width = 250
+button_width = 320
 button_height = 50
 
 # Make surface and display
@@ -173,7 +173,7 @@ def draw_game_over_menu(score, high_score):
     drawText(f"Your Score: {score}", white, display_width / 2, display_height / 2 - 120, 50)
     drawText("Game Over", white, display_width / 2, display_height / 2 - 50, 100)
 
-    button_texts = ["Retry (r)", "Share High Score", "Quit (q)"]
+    button_texts = ["Retry (r)", "Share High Score", "Quit"]
     for i, button_text in enumerate(button_texts):
         button_x = display_width / 2 - button_width / 2
         button_y = button_y_start + i * (button_height + 10)
@@ -198,7 +198,7 @@ def handle_button_click(button_text, score):
         return "Menu"
     elif button_text == "Multiplayer (m)":
         return "Menu"
-    elif button_text == "Quit (q)":
+    elif button_text == "Quit":
         return "Exit"
     elif button_text == "Play (Enter)":
         return "Playing"
@@ -216,14 +216,13 @@ def draw_menu_screen():
     update_scrolling_background()
     buttons = []
     button_y_start = display_height / 2 - 1.5 * button_height
-    for i, button_text in enumerate(["Play (Enter)", "Remote Controlled (c)", "Quit (q)"]):
+    for i, button_text in enumerate(["Play (Enter)", "Remote Controlled (c)", "Quit"]):
         button_x = display_width / 2 - button_width / 2
         button_y = button_y_start + i * (button_height + 10)
         button_rect = pygame.Rect(button_x, button_y, button_width, button_height)
         pygame.draw.rect(gameDisplay, white, button_rect, 2)
         drawText(button_text, white, display_width / 2, button_y + button_height / 2, 30)
         buttons.append({"text": button_text, "rect": button_rect})
-
     return buttons
 
 
@@ -285,7 +284,7 @@ def gameLoop(startingState):
         handle_menu_music(gameState)
         # Game menu
         while gameState == "Menu":
-            draw_menu_screen()
+            buttons = draw_menu_screen()
             handle_menu_music(gameState)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -300,6 +299,19 @@ def gameLoop(startingState):
                         # if not server:
                         #     server = AsteroidsServer()
                         #     start_server_thread(server)
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    mouse_pos = pygame.mouse.get_pos()
+                    for button in buttons:
+                        if button["rect"].collidepoint(mouse_pos):
+                            if button["text"] == "Play (Enter)":
+                                gameState = "Playing"
+                                handle_menu_music(gameState)
+                            elif button["text"] == "Remote Controlled (c)":
+                                gameState = "Remote"
+                            elif button["text"] == "Quit":
+                                reset_high_score()
+                                gameState = "Exit"
+                        
 
             pygame.display.update()
             timer.tick(5)
@@ -391,15 +403,14 @@ def gameLoop(startingState):
                     if event.key == pygame.K_r:
                         gameState = "Exit"
                         gameLoop("Playing")
-                    if event.key == pygame.K_LSHIFT:
-                        hyperspace = 30
+
 
             if event.type == pygame.KEYUP:
                 if event.key == pygame.K_UP:
                     player.thrust = False
                 if event.key == pygame.K_LEFT or event.key == pygame.K_RIGHT:
                     player.rtspd = 0
-
+             
             # Mousebutton clickable
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if gameState == "Paused" or gameState == "Game Over":
@@ -468,17 +479,30 @@ def gameLoop(startingState):
             update_scrolling_background()
             handle_menu_music(gameState)
             buttons = draw_game_over_menu(score, high_score)
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    reset_high_score()
+                    gameState = "Exit"
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_r:
+                        gameState = "Exit"
+                        gameLoop("Playing")
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    mouse_pos = pygame.mouse.get_pos()
+                    for button in buttons:
+                        if button["rect"].collidepoint(mouse_pos):
+                            if button["text"] == "Retry (r)":
+                                gameState = "Exit"
+                                gameLoop("Playing")
+                            elif button["text"] == "Share High Score":
+                                share_high_score(score)
+                            elif button["text"] == "Quit":
+                                reset_high_score()
+                                gameState = "Exit"
             pygame.display.update()
             timer.tick(5)
-            continue  # Skip the rest of the loop
-
-        # Hyperspace
-        if hyperspace != 0:
-            player_state = "Died"
-            hyperspace -= 1
-            if hyperspace == 1:
-                player.x = random.randrange(0, display_width)
-                player.y = random.randrange(0, display_height)
+            continue
+        
 
         for power_up in powerups:
             power_up.draw(gameDisplay)
