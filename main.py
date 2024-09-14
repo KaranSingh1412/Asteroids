@@ -31,6 +31,7 @@ white = (255, 255, 255)
 red = (255, 0, 0)
 black = (0, 0, 0)
 
+# fenstergröße in pixel
 display_width = 1200
 display_height = 800
 
@@ -40,16 +41,17 @@ player_max_rtspd = 10
 small_saucer_accuracy = 10
 large_saucer_accuracy = 5
 
+# buttongröße für das menü in pixel
 button_width = 320
 button_height = 50
 
-# Make surface and display
+# hiermit wird das game fenster aufgebaut
 gameDisplay = pygame.display.set_mode((display_width, display_height))
 pygame.display.set_mode((display_width, display_height), pygame.DOUBLEBUF)
-pygame.display.set_caption("Asteroids")
+pygame.display.set_caption("Spaceroids")
 timer = pygame.time.Clock()
 
-
+# funktion die den highscore zum vergleichen und anzeigen aus der datei ausließt
 def read_high_score():
     if os.path.exists("highscore.txt"):
         with open("highscore.txt", "r") as file:
@@ -57,11 +59,12 @@ def read_high_score():
     return 0
 
 
+# funktion die den neuen highscore (funktion zum überprüfen weiter unten) in die highscore.txt schreibt
 def write_high_score(score):
     with open("highscore.txt", "w") as file:
         file.write(str(score))
 
-
+# funktion die die highscore datei löscht, sobalt der user das game schließt
 def reset_high_score():
     if os.path.exists("highscore.txt"):
         os.remove("highscore.txt")
@@ -69,7 +72,7 @@ def reset_high_score():
         write_high_score(0)
 
 
-# Import sound effects and music
+# Import der sound effekte und musik
 snd_fire = pygame.mixer.Sound("Sounds/fire.wav")
 snd_bangL = pygame.mixer.Sound("Sounds/bangLarge.wav")
 snd_bangM = pygame.mixer.Sound("Sounds/bangMedium.wav")
@@ -81,18 +84,20 @@ rocket_expl = pygame.mixer.Sound("Sounds/Rocket.Expl.wav")
 rocket_start = pygame.mixer.Sound("Sounds/Rocket_start.wav")
 Powerupactive = pygame.mixer.Sound("Sounds/Powerupactive.wav")
 
+# Lautstärken von Powerup und Menü sounds anpassen
 Powerupactive.set_volume(0.5)
 menu_music.set_volume(0.8)
 
-# Import Background Image Menu
+# Import Hintergrundbild für das Menü
 background_image = pygame.image.load(
     'Assets/backgrounds/1920-space-wallpaper-banner-background-stunning-view-of-a-cosmic-galaxy-with-planets-and-space-objects-elements-of-this-image-furnished-by-nasa-generate-ai.jpg')
+    # danke an Vecteezy.com und den User ahasanaraakter für das bereitstellen dieses Bildes
 background_x = 0
 background_y = 0
-scroll_speed = 1  # Adjust this value to change the scrolling speed
-scroll_direction = 1  # 1 for right to left, -1 for left to right
+scroll_speed = 1
+scroll_direction = -1
 
-
+# hiermit wird erreicht, dass das Hintergrundbild im Menü sich dynamisch von links nach rechts bewegt mit dem scroll speed 1
 def update_scrolling_background():
     global background_x, background_y, scroll_direction
 
@@ -124,15 +129,14 @@ def drawText(msg, color, x, y, s, center=True):
     gameDisplay.blit(screen_text, rect)
 
 
-# Create a function to handle playing and stopping the music
+# Funktion um Start und Stop der Musik zu verwalten
 def handle_menu_music(gameState):
     # return
     if gameState in ["Menu", "Multiplayer", "Paused", "Game Over"]:
         if not pygame.mixer.get_busy():
-            menu_music.play(-1)  # -1 means loop infinitely
+            menu_music.play(-1)  # -1 bedeutet unendlich
     else:
         menu_music.stop()
-
 
 # Create function to check for collision
 def isCollidingSaucer(x1, y1, x2, y2, r1, r2):
@@ -144,7 +148,42 @@ def isColliding(x, y, xTo, yTo, size):
         return True
     return False
 
+# funktion um das Start Menü zu zeichnen, 3 Buttons, clickable
+def draw_menu_screen():
+    update_scrolling_background()
+    buttons = []
+    button_y_start = display_height / 2 - 1.5 * button_height
+    for i, button_text in enumerate(["Play (Enter)", "Remote Controlled (c)", "Quit"]):
+        button_x = display_width / 2 - button_width / 2
+        button_y = button_y_start + i * (button_height + 10)
+        button_rect = pygame.Rect(button_x, button_y, button_width, button_height)
+        pygame.draw.rect(gameDisplay, white, button_rect, 2)
+        drawText(button_text, white, display_width / 2, button_y + button_height / 2, 30)
+        buttons.append({"text": button_text, "rect": button_rect})
+    return buttons
 
+def draw_connection_menu(server):
+    update_scrolling_background()
+    if server.hasConnection:
+        drawText(f"Connected to {server.connectedClient}", white, display_width / 2, display_height / 2, 50)
+    else:
+        drawText("Waiting for connection...", white, display_width / 2, display_height / 2 - 50, 50)
+        drawText(f"IP Address: {server.get_local_ip()}", white, display_width / 2, display_height / 2 + 50, 40)
+        drawText(f"Port: {server.TCP_PORT}", white, display_width / 2, display_height / 2 + 100, 40)
+
+    # Button am unteren Bildschirmrand
+    button_y = display_height - button_height - 20
+    button_x = display_width / 2 - button_width / 2
+    button_rect = pygame.Rect(button_x, button_y, button_width, button_height)
+    pygame.draw.rect(gameDisplay, white, button_rect, 2)
+    drawText('Back (b)', white, display_width / 2, button_y + button_height / 2, 30)
+
+def start_server_thread(server):
+    server_thread = threading.Thread(target=server.start_server)
+    server_thread.daemon = True
+    server_thread.start()
+
+# Funktion um das Pause Menü zu zeichnen, 3 Buttons, und darüber eine Anzeige über den jetzigen Score
 def draw_pause_menu(score):
     update_scrolling_background()
     # Draw the buttons
@@ -163,7 +202,7 @@ def draw_pause_menu(score):
 
     return buttons
 
-
+# Funktion um das Game Over Menü zu zeichnen, wieder 3 Button und Anzeige von Score und Highscore
 def draw_game_over_menu(score, high_score):
     update_scrolling_background()
     buttons = []
@@ -184,7 +223,7 @@ def draw_game_over_menu(score, high_score):
 
     return buttons
 
-
+# Funktion die bestimmt was beim click auf welchen Button passieren soll - welcher gamestate aktiviert wird oder welche funktion getriggert werden soll
 def handle_button_click(button_text, score):
     if button_text == "Resume (esc)":
         return "Playing"
@@ -204,50 +243,12 @@ def handle_button_click(button_text, score):
         return "Playing"
     return None
 
-
+# funktion um den aktuellen highscore (aus highscore.txt) in eine email mit formuliertem Text und Betreff einzufügen
 def share_high_score(score):
-    subject = "Schaue dir meinen neunen Asteroids 2.0 high score an!"
-    body = f"Heyho,\n\nIch habe einen neuen high score von {score} in in meinem neuen Lieblingsretro-game Asteroids 2.0 erreicht. Gehe auf https://github.com/KaranSingh1412/Asteroids und versuche ihn zu schlagen :) \n\nViel Erfolg!"
+    subject = "Schaue dir meinen neunen Spaceroids high score an!"
+    body = f"Heyho,\n\nIch habe einen neuen high score von {score} in in meinem neuen Lieblingsretro-game Spaceroids erreicht. Gehe auf https://github.com/KaranSingh1412/Asteroids und versuche ihn zu schlagen :) \n\nViel Erfolg!"
     mailto_link = f"mailto:?subject={subject}&body={body}"
     webbrowser.open(mailto_link)
-
-
-def draw_menu_screen():
-    update_scrolling_background()
-    buttons = []
-    button_y_start = display_height / 2 - 1.5 * button_height
-    for i, button_text in enumerate(["Play (Enter)", "Remote Controlled (c)", "Quit"]):
-        button_x = display_width / 2 - button_width / 2
-        button_y = button_y_start + i * (button_height + 10)
-        button_rect = pygame.Rect(button_x, button_y, button_width, button_height)
-        pygame.draw.rect(gameDisplay, white, button_rect, 2)
-        drawText(button_text, white, display_width / 2, button_y + button_height / 2, 30)
-        buttons.append({"text": button_text, "rect": button_rect})
-    return buttons
-
-
-def draw_connection_menu(server):
-    update_scrolling_background()
-    if server.hasConnection:
-        drawText(f"Connected to {server.connectedClient}", white, display_width / 2, display_height / 2, 50)
-    else:
-        drawText("Waiting for connection...", white, display_width / 2, display_height / 2 - 50, 50)
-        drawText(f"IP Address: {server.get_local_ip()}", white, display_width / 2, display_height / 2 + 50, 40)
-        drawText(f"Port: {server.TCP_PORT}", white, display_width / 2, display_height / 2 + 100, 40)
-
-    # Button am unteren Bildschirmrand
-    button_y = display_height - button_height - 20
-    button_x = display_width / 2 - button_width / 2
-    button_rect = pygame.Rect(button_x, button_y, button_width, button_height)
-    pygame.draw.rect(gameDisplay, white, button_rect, 2)
-    drawText('Back (b)', white, display_width / 2, button_y + button_height / 2, 30)
-
-
-def start_server_thread(server):
-    server_thread = threading.Thread(target=server.start_server)
-    server_thread.daemon = True
-    server_thread.start()
-
 
 def gameLoop(startingState):
     # Init variables
@@ -283,6 +284,7 @@ def gameLoop(startingState):
     while gameState != "Exit":
         handle_menu_music(gameState)
         # Game menu
+        # bestimmt, was bei jeweiligen shortcuts oder buttonclicks im startmenü passieren soll (funktion oder neuer gamestate)
         while gameState == "Menu":
             buttons = draw_menu_screen()
             handle_menu_music(gameState)
@@ -312,7 +314,6 @@ def gameLoop(startingState):
                                 reset_high_score()
                                 gameState = "Exit"
                         
-
             pygame.display.update()
             timer.tick(5)
         
@@ -351,15 +352,15 @@ def gameLoop(startingState):
                 pygame.display.update()
                 timer.tick(5)
 
-        # highscore checker
+        # highscore checker überprüft ob highscore überschritten wird und schreibt ggf. neuen score in txt datei
         if score > high_score:
             high_score = score
             write_high_score(high_score)
 
-        # User inputs
+        # User inputs: wenn quit wird highscore geresetet, wenn esc oder p gedrückt wechselt gamestate auf paused oder playing und die dementsprechende musik wird gespielt/ nicht gespielt
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                reset_high_score()  # Reset high score when exiting the game
+                reset_high_score() 
                 gameState = "Exit"
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE or event.key == pygame.K_p:
@@ -399,11 +400,11 @@ def gameLoop(startingState):
                         # Spiele den Bullet-Sound ab, wenn eine normale Bullet abgeschossen wird
                         pygame.mixer.Sound.play(snd_fire)
 
+                # wenn r bei game over gedrückt, startet spiel von vorne (playing) aber kein reset des highscores
                 if gameState == "Game Over":
                     if event.key == pygame.K_r:
                         gameState = "Exit"
                         gameLoop("Playing")
-
 
             if event.type == pygame.KEYUP:
                 if event.key == pygame.K_UP:
@@ -411,7 +412,7 @@ def gameLoop(startingState):
                 if event.key == pygame.K_LEFT or event.key == pygame.K_RIGHT:
                     player.rtspd = 0
              
-            # Mousebutton clickable
+            # Mousebutton clickable machen, und auch zeigen was dann passieren soll
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if gameState == "Paused" or gameState == "Game Over":
                     mouse_pos = pygame.mouse.get_pos()
@@ -437,6 +438,7 @@ def gameLoop(startingState):
                             elif action == "Exit":
                                 pygame.quit()
                                 quit()
+
         if server and server.hasConnection:
             if server.received_data:
                 try:
@@ -458,7 +460,7 @@ def gameLoop(startingState):
         # Update player
         player.updatePlayer()
 
-        # Checking player invincible time
+        # Check ob player unsichtbar ist (nach spawn)
         if player_invi_dur != 0:
             player_invi_dur -= 1
         elif hyperspace == 0:
@@ -467,14 +469,14 @@ def gameLoop(startingState):
         # Reset display
         gameDisplay.fill(black)
 
-        # Draw pause menu if game is paused
+        # Pause Menu zeichnen wenn paused
         if gameState == "Paused":
             draw_pause_menu(score)
             pygame.display.update()
             timer.tick(5)
-            continue  # Skip the rest of the loop
+            continue 
 
-        # If game is over, display game over menu with real highscore
+        # wenn game over, zeichne game over menu mit aktuellem highscore und buttonfunktionen
         elif gameState == "Game Over":
             update_scrolling_background()
             handle_menu_music(gameState)
@@ -579,7 +581,7 @@ def gameLoop(startingState):
                             pygame.mixer.Sound.play(snd_bangS)
                         asteroids.remove(a)
                     else:
-                        # Ändern Sie die Bewegungsrichtugn des Asteroiden anhand des Aufprallwinkels
+                        # Änder die Bewegungsrichtung des Asteroiden anhand des Aufprallwinkels
                         a.dir = math.atan2(a.y - player.y, a.x - player.x)
                         a.speed = 5
                         a.x += a.speed * math.cos(a.dir)
@@ -939,7 +941,7 @@ def gameLoop(startingState):
                 except ValueError:
                     continue
 
-        # Extra live
+        # Extra leben wenn spieler 10000 punkte erreicht
         if score > oneUp_multiplier * 10000:
             oneUp_multiplier += 1
             live += 1
@@ -965,11 +967,11 @@ def gameLoop(startingState):
             else:
                 player.drawPlayer()
 
-        # Draw score and high score
+        # score und high score für ingame Anzeige
         drawText(f"Score: {score}", white, 60, 20, 40, False)
         drawText(f"High Score: {high_score}", white, display_width - 350, 20, 40, False)
 
-        # Draw Lives
+        # verbleibende Leben, Anzeige ingame
         for l in range(live + 1):
             Player(75 + l * 25, 75, gameDisplay, display_width, display_height, player_size).drawPlayer()
 
@@ -984,6 +986,6 @@ def gameLoop(startingState):
 gameLoop("Menu")
 
 # End game
-reset_high_score()  # Reset high score when the script ends
+reset_high_score()  # Reset high score wenn script endet/ bei quit
 pygame.quit()
 quit()
