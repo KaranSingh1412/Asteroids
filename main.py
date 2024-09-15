@@ -312,9 +312,10 @@ def gameLoop(startingState):
                     reset_high_score()
                     gameState = "Exit"
                 if event.type == pygame.KEYDOWN:
-                    # Wenn Enter gedrückt wird, startet das Spiel
+                    # Wenn Enter gedrückt wird, startet das Spiel - Genauer gesagt beendet dies die aktuelle Spielschleife und startet eine neue, was effektiv einem Neustart des Spiels entspricht. (Bug Fixing wenn vorher schon spiel gespielt, im Pause Menü auf Menu geklickt wurde und dann wieder auf Play geklickt wird)
                     if event.key == pygame.K_RETURN:
-                        gameState = "Playing"
+                        gameState = "Exit"
+                        gameLoop("Playing")
                         handle_menu_music(gameState)
                     # Wenn c gedrückt wird, startet der Server für das Remote Control
                     if event.key == pygame.K_c:
@@ -325,8 +326,16 @@ def gameLoop(startingState):
                     for button in buttons:
                         if button["rect"].collidepoint(mouse_pos):
                             # Ändere den gameState basierend auf dem angeklickten Button
-                            gameState = handle_button_click(button["text"], score)
-                        
+                            if button["text"] == "Play (Enter)":
+                            # Auch hier fügen wir die "Retry"-Funktionalität hinzu
+                              gameState = "Exit"
+                              gameLoop("Playing")
+                            elif button["text"] == "Remote Controlled (c)":
+                                gameState = "Remote"
+                            elif button["text"] == "Quit":
+                                reset_high_score()
+                                gameState = "Exit"
+                                
             pygame.display.update()
             timer.tick(5)
         

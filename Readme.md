@@ -1,7 +1,7 @@
 # Spaceroids
 
 ## Beschreibung
-Asteroids ist ein klassisches Arcade-Spiel, bei dem der Spieler ein Raumschiff steuert und Asteroiden zerstören muss, um Punkte zu sammeln. Das Ziel des Spiels ist es, so viele Punkte wie möglich zu erzielen, indem man Asteroiden ausweicht und sie abschießt. **Asteroids 2.0** ist unsere Version des Spielklassikers mit einigen zusätzlichen Features wie Powerups, Design-Implementationen und mehr.
+Asteroids ist ein klassisches Arcade-Spiel, bei dem der Spieler ein Raumschiff steuert und Asteroiden zerstören muss, um Punkte zu sammeln. Das Ziel des Spiels ist es, so viele Punkte wie möglich zu erzielen, indem man Asteroiden ausweicht und sie abschießt. **Spaceroids** ist unsere Version des Spielklassikers mit einigen zusätzlichen Features wie Powerups, Design-Implementationen und mehr.
 
 ## Installation
 
@@ -22,7 +22,7 @@ Asteroids ist ein klassisches Arcade-Spiel, bei dem der Spieler ein Raumschiff s
 
 ## Handysteuerung
 
-### Handy: Android/iOS Asteroids App
+### Handy: Android App
 Installieren Sie die bereitgestellte App und öffnen Sie diese.
 
 ### Aktivierung der Handysteuerung
