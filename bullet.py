@@ -1,29 +1,27 @@
 import math
 import pygame
 
-
-# Create class bullet
 class Bullet:
+    # Konstruktor der Bulletklasse, empfängt (x, y, direction, gameDisplay, display_width, display_height)
     def __init__(self, x, y, direction, gameDisplay, display_width, display_height):
         self.x = x
         self.y = y
         self.dir = direction
         self.life = 30
-        self.white = (255, 255, 255)
+        self.color = (255, 255, 255) # Farbe der Kugel in weiß (RGB)
         self.bullet_speed = 15
         self.gameDisplay = gameDisplay
         self.display_width = display_width
         self.display_height = display_height
 
     def updateBullet(self):
-        # Moving
+        # Bewegung der Kugel
         self.x += self.bullet_speed * math.cos(self.dir * math.pi / 180)
         self.y += self.bullet_speed * math.sin(self.dir * math.pi / 180)
 
-        # Drawing
         self.drawBullet()
 
-        # Wrapping
+        # Prüfen ob die Kugel das Spielfeld verlassen hat
         if self.x > self.display_width:
             self.x = 0
         elif self.x < 0:
@@ -34,11 +32,14 @@ class Bullet:
             self.y = self.display_height
         self.life -= 1
 
+    # Zeichnet die Kugel
     def drawBullet(self):
-        pygame.draw.circle(self.gameDisplay, self.white, (int(self.x), int(self.y)), 3)
+        pygame.draw.circle(self.gameDisplay, self.color, (int(self.x), int(self.y)), 3)
 
 
 class RocketBullet(Bullet):
+
+    # Konstruktor der RocketBulletklasse, empfängt (x, y, direction, gameDisplay, display_width, display_height)
     def __init__(self, x, y, direction, gameDisplay, display_width, display_height):
         super().__init__(x, y, direction, gameDisplay, display_width, display_height)
         self.bullet_speed = 10  # Reduzierte Geschwindigkeit der Rakete
@@ -62,7 +63,9 @@ class RocketBullet(Bullet):
             flame_length -= 5  # Verkleinere die Flamme für den nächsten Farbabschnitt
 
 
+# Erstellt eine ExplosionBulletklasse, die von der Bulletklasse erbt
 class ExplosionBullet(Bullet):
+    # Konstruktor der ExplosionBulletklasse, empfängt (x, y, direction, gameDisplay, display_width, display_height)
     def __init__(self, x, y, direction, gameDisplay, display_width, display_height):
         super().__init__(x, y, direction, gameDisplay, display_width, display_height)
         self.bullet_speed = 10

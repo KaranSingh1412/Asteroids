@@ -2,7 +2,9 @@ import pygame
 import math
 
 
+# Basisklasse für Power-Ups
 class PowerUps:
+    # Konstruktor der PowerUpsklasse, empfängt (x, y, duration, name)
     def __init__(self, x, y, duration, name):
         self.x = x
         self.y = y
@@ -61,13 +63,13 @@ class Shield(PowerUps):
 
 class Rocket(PowerUps):
     def __init__(self, x, y, image_file):
-        super().__init__(x, y, 8000, 'Rocket')
+        super().__init__(x, y, 8000, 'Rocket') # Rufen Sie den Konstruktor der Basisklasse auf
         self.is_activated = False
         self.image = pygame.image.load(image_file)
         self.image = pygame.transform.scale(self.image, (40, 40))
 
     def activate(self):
-        super().activate()
+        super().activate() # Rufen Sie die ursprüngliche activate-Methode auf
         self.is_activated = True
 
     def update(self):
