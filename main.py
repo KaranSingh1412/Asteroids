@@ -35,9 +35,11 @@ black = (0, 0, 0)
 display_width = 1200
 display_height = 800
 
+# Spieler größe und max. rotationsgeschwindigkeit
 player_size = 15
 player_max_rtspd = 10
 
+# Ufo Schussgenauigkeiten für kleine und große Ufos
 small_saucer_accuracy = 10
 large_saucer_accuracy = 5
 
@@ -101,24 +103,24 @@ scroll_direction = -1
 def update_scrolling_background():
     global background_x, background_y, scroll_direction
 
-    # Update the background position
+    # Hintergrundbild scrollen abhängig vom der scroll_speed und scroll_direction
     background_x -= scroll_speed * scroll_direction
 
-    # Check if we've reached either end
+    # Prüfen ob das Bild den Rand erreicht hat
     if background_x <= -background_image.get_width() + display_width:
-        # Reached the left end, reverse direction
+        # Linker Rand erreicht, Richtung umkehren
         scroll_direction = -1
         background_x = -background_image.get_width() + display_width
     elif background_x >= 0:
-        # Reached the right end, reverse direction
+        # Rechter Rand erreicht, Richtung umkehren
         scroll_direction = 1
         background_x = 0
 
-    # Draw the background
+    # Hintergrundbild zeichnen
     gameDisplay.blit(background_image, (int(background_x), int(background_y)))
 
 
-# Create function to draw texts
+# Create Helper function to draw texts
 def drawText(msg, color, x, y, s, center=True):
     screen_text = pygame.font.SysFont("Calibri", s).render(msg, True, color)
     if center:
@@ -131,18 +133,18 @@ def drawText(msg, color, x, y, s, center=True):
 
 # Funktion um Start und Stop der Musik zu verwalten
 def handle_menu_music(gameState):
-    # return
     if gameState in ["Menu", "Multiplayer", "Paused", "Game Over"]:
         if not pygame.mixer.get_busy():
             menu_music.play(-1)  # -1 bedeutet unendlich
     else:
         menu_music.stop()
 
-# Create function to check for collision
+# Eine Extra Kolliosionsfunktion für die Ufos, da diese Kreisförmig sind
 def isCollidingSaucer(x1, y1, x2, y2, r1, r2):
     distance = math.sqrt((x1 - x2)**2 + (y1 - y2)**2)
     return distance < (r1 + r2)
 
+# Eine Kollisionsfunktion für alle anderen Entitäten
 def isColliding(x, y, xTo, yTo, size):
     if x > xTo - size and x < xTo + size and y > yTo - size and y < yTo + size:
         return True
@@ -162,22 +164,28 @@ def draw_menu_screen():
         buttons.append({"text": button_text, "rect": button_rect})
     return buttons
 
+# Funktion um eine Socket Verbindung aufzubauen falls der User die App öffnet
 def draw_connection_menu(server):
     update_scrolling_background()
+
+    #prüfen ob eine Verbindung besteht und wenn ja, anzeigen welcher Client (App) verbunden ist
     if server.hasConnection:
         drawText(f"Connected to {server.connectedClient}", white, display_width / 2, display_height / 2, 50)
     else:
+        # Anzeigen der IP Adresse und des Ports, auf dem der Server läuft damit man sich über die App verbinden kann
         drawText("Waiting for connection...", white, display_width / 2, display_height / 2 - 50, 50)
         drawText(f"IP Address: {server.get_local_ip()}", white, display_width / 2, display_height / 2 + 50, 40)
         drawText(f"Port: {server.TCP_PORT}", white, display_width / 2, display_height / 2 + 100, 40)
 
-    # Button am unteren Bildschirmrand
+    # Button am unteren Bildschirmrand um zurück ins Menü zu gelangen (nicht clickable)
     button_y = display_height - button_height - 20
     button_x = display_width / 2 - button_width / 2
     button_rect = pygame.Rect(button_x, button_y, button_width, button_height)
     pygame.draw.rect(gameDisplay, white, button_rect, 2)
     drawText('Back (b)', white, display_width / 2, button_y + button_height / 2, 30)
 
+# Funktion um einen Thread zu starten, damit der Server im Hintergrund läuft
+# und nicht den Main Thread blockiert (Führt zu einem eingefrorenen Bildschirm)
 def start_server_thread(server):
     server_thread = threading.Thread(target=server.start_server)
     server_thread.daemon = True
@@ -186,9 +194,10 @@ def start_server_thread(server):
 # Funktion um das Pause Menü zu zeichnen, 3 Buttons, und darüber eine Anzeige über den jetzigen Score
 def draw_pause_menu(score):
     update_scrolling_background()
-    # Draw the buttons
+    # Buttons zeichnen
     buttons = []
     button_y_start = display_height / 2 - 1.5 * button_height
+    # 3 Buttons zeichnen
     for i, button_text in enumerate(["Resume (esc)", "Retry", "Menu"]):
         button_x = display_width / 2 - button_width / 2
         button_y = button_y_start + i * (button_height + 10)
@@ -197,21 +206,24 @@ def draw_pause_menu(score):
         drawText(button_text, white, display_width / 2, button_y + button_height / 2, 30)
         buttons.append({"text": button_text, "rect": button_rect})
 
-    # Draw the current score
+    # Aktuellen Score anzeigen
     drawText("Current Score: " + str(score), white, display_width / 2, button_y_start - 50, 30)
 
     return buttons
 
-# Funktion um das Game Over Menü zu zeichnen, wieder 3 Button und Anzeige von Score und Highscore
+# Funktion um das Game Over Menü zu zeichnen, wieder 3 Buttons und Anzeige von Score und Highscore
 def draw_game_over_menu(score, high_score):
     update_scrolling_background()
     buttons = []
     button_y_start = display_height / 2 + 50
 
+    #Score und Highscore anzeigen
     drawText(f"High Score: {high_score}", white, display_width / 2, display_height / 2 - 180, 50)
     drawText(f"Your Score: {score}", white, display_width / 2, display_height / 2 - 120, 50)
+    # "Game Over" anzeigen
     drawText("Game Over", white, display_width / 2, display_height / 2 - 50, 100)
 
+    # 3 Buttons zeichnen
     button_texts = ["Retry (r)", "Share High Score", "Quit"]
     for i, button_text in enumerate(button_texts):
         button_x = display_width / 2 - button_width / 2
@@ -223,7 +235,8 @@ def draw_game_over_menu(score, high_score):
 
     return buttons
 
-# Funktion die bestimmt was beim click auf welchen Button passieren soll - welcher gamestate aktiviert wird oder welche funktion getriggert werden soll
+# Funktion die bestimmt was beim click auf welchen Button passieren soll,
+# welcher gamestate aktiviert wird oder welche funktion getriggert werden soll
 def handle_button_click(button_text, score):
     if button_text == "Resume (esc)":
         return "Playing"
@@ -235,9 +248,10 @@ def handle_button_click(button_text, score):
     elif button_text == "Menu":
         reset_high_score()
         return "Menu"
-    elif button_text == "Multiplayer (m)":
-        return "Menu"
+    elif button_text == "Remote Controlled (c)":
+        return "Remote"
     elif button_text == "Quit":
+        reset_high_score()
         return "Exit"
     elif button_text == "Play (Enter)":
         return "Playing"
@@ -250,35 +264,40 @@ def share_high_score(score):
     mailto_link = f"mailto:?subject={subject}&body={body}"
     webbrowser.open(mailto_link)
 
+# Die Main Game Loop Funktion, die das Spiel steuert
 def gameLoop(startingState):
     # Init variables
     global power_up
     gameState = startingState
+    # Spieler Variablen
     player_state = "Alive"
-    player_blink = 0
-    player_pieces = []
-    player_dying_delay = 0
-    player_invi_dur = 0
-    next_level_delay = 0
-    bullet_capacity = 4
-    bullets = []
-    particles = []
-    asteroids = []
-    Explosion_bullets = []
-    powerups = []
-    # active_powerups = []
-    stage = 3
-    score = 0
-    live = 2
-    oneUp_multiplier = 1
-    hyperspace = 0
-    playOneUpSFX = 0
-    intensity = 0
-    player = Player(display_width / 2, display_height / 2, gameDisplay, display_width, display_height, player_size)
-    saucer: Saucer = Saucer(display_width, display_height, gameDisplay)
-    high_score = read_high_score()
-    last_rocket_shot_time = 0
-    server = None
+    player_blink = 0 # Blinking effect nach dem Respawn
+    player_pieces = [] # Spielerstücke nach dem Tod (Effekt)
+    player_dying_delay = 0 # Delay nach dem Tod
+    player_invi_dur = 0 # Unsterblichkeitsdauer nach dem Respawn
+    player = Player(display_width / 2, display_height / 2, gameDisplay, display_width, display_height, player_size) # Spieler Objekt
+
+    bullet_capacity = 4 # Maximale Anzahl an Kugeln gleichzeitig
+    bullets = [] # Liste aller Kugeln
+    particles = [] # Liste aller Partikel (Schusseffekt)
+    asteroids = [] # Liste aller Asteroiden
+    Explosion_bullets = [] # Liste aller Explosionsbullets (nach Raketenabschuss)
+    powerups = [] # Liste aller gespawnten Powerups
+
+    next_level_delay = 0 # Delay nach dem Abschluss eines Levels
+    stage = 3 # Aktuelles Level
+    score = 0 # Aktueller Score
+    live = 2 # Anzahl an Leben (Leben <= 0 -> Game Over)
+
+    oneUp_multiplier = 1 # Multiplikator für die Berechnung des Extra Leben (1 Leben pro 10.000 Punkte)
+    hyperspace = 0 # Hyperspace Effekt (Teleportation)
+    playOneUpSFX = 0 # Soundeffekt für das Extra Leben
+    intensity = 0 # Schwierigkeit des Spiels
+
+    saucer = Saucer(display_width, display_height, gameDisplay) # Ufo Objekt
+    high_score = read_high_score() # Highscore auslesen
+    last_rocket_shot_time = 0 # Zeitpunkt des letzten Raketenabschusses
+    server = None # Server Objekt für Remote Control
 
     # Main loop
     while gameState != "Exit":
@@ -288,49 +307,44 @@ def gameLoop(startingState):
         while gameState == "Menu":
             buttons = draw_menu_screen()
             handle_menu_music(gameState)
-            for event in pygame.event.get():
+            for event in pygame.event.get(): # Event handling
                 if event.type == pygame.QUIT:
                     reset_high_score()
                     gameState = "Exit"
                 if event.type == pygame.KEYDOWN:
+                    # Wenn Enter gedrückt wird, startet das Spiel
                     if event.key == pygame.K_RETURN:
                         gameState = "Playing"
                         handle_menu_music(gameState)
+                    # Wenn c gedrückt wird, startet der Server für das Remote Control
                     if event.key == pygame.K_c:
                         gameState = "Remote"
-                        # if not server:
-                        #     server = AsteroidsServer()
-                        #     start_server_thread(server)
                 if event.type == pygame.MOUSEBUTTONDOWN:
+                    # Überprüfen, ob ein Button angeklickt wurde mithilfe der Maus Position
                     mouse_pos = pygame.mouse.get_pos()
                     for button in buttons:
                         if button["rect"].collidepoint(mouse_pos):
-                            if button["text"] == "Play (Enter)":
-                                gameState = "Playing"
-                                handle_menu_music(gameState)
-                            elif button["text"] == "Remote Controlled (c)":
-                                gameState = "Remote"
-                            elif button["text"] == "Quit":
-                                reset_high_score()
-                                gameState = "Exit"
+                            # Ändere den gameState basierend auf dem angeklickten Button
+                            gameState = handle_button_click(button["text"], score)
                         
             pygame.display.update()
             timer.tick(5)
         
-        # server = None
         if gameState == "Remote":
             if not server:
+                # Prüfe ob der Server bereits gestartet wurde
                 server = AsteroidsServer()
-                start_server_thread(server)
+                start_server_thread(server) # Starte den Server in einem eigenen Thread
 
             while gameState == "Remote":
-                draw_connection_menu(server)
+                draw_connection_menu(server) # Zeichne das entsprechende Menü
                 for event in pygame.event.get():
                     if event.type == pygame.QUIT:
                         reset_high_score()
                         gameState = "Exit"
                         server.stop_server()
                     if event.type == pygame.KEYDOWN:
+                        # Wenn b gedrückt wurde dann geh zurück ins menu und stoppe den server
                         if event.key == pygame.K_b:
                             gameState = "Menu"
                             handle_menu_music(gameState)
@@ -338,7 +352,8 @@ def gameLoop(startingState):
 
                 if server and server.hasConnection:
                     if server.received_data:
-                        if server.received_data == "Play":
+                        # Überprüfen ob der Server eine Verbindung hat und Daten empfangen hat
+                        if server.received_data == "Play": # Wenn der Controller "Play" sendet, starte das Spiel
                             gameState = "Playing"
                             server.send_signal("Done")
                             server.received_data = None
@@ -348,7 +363,6 @@ def gameLoop(startingState):
                         if server:
                             server.stop_server()
                         gameState = "Exit"
-                    # Fügen Sie hier weitere Ereignisbehandlungen hinzu
 
                 pygame.display.update()
                 timer.tick(5)
@@ -358,7 +372,7 @@ def gameLoop(startingState):
             high_score = score
             write_high_score(high_score)
 
-        # User inputs: wenn quit wird highscore geresetet, wenn esc oder p gedrückt wechselt gamestate auf paused oder playing und die dementsprechende musik wird gespielt/ nicht gespielt
+        # User inputs: wenn quit, dann wird highscore geresetet, wenn esc oder p gedrückt wechselt gamestate auf paused oder playing und die dementsprechende musik wird gespielt/ nicht gespielt
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 reset_high_score() 
@@ -374,15 +388,21 @@ def gameLoop(startingState):
 
                 rocket_active = None
 
-                #gamecontrols
+                # Die Steuerung des Spielers
                 if event.key == pygame.K_UP:
+                    # Wenn die obere Pfeiltaste gedrückt wird, aktiviere den Schub
                     player.thrust = True
                 elif event.key == pygame.K_LEFT:
+                    # Wenn die linke Pfeiltaste gedrückt wird, drehe das Raumschiff nach links
                     player.rtspd = -player_max_rtspd
                 elif event.key == pygame.K_RIGHT:
+                    # Wenn die rechte Pfeiltaste gedrückt wird, drehe das Raumschiff nach rechts
                     player.rtspd = player_max_rtspd
                 elif event.key == pygame.K_SPACE and player_dying_delay == 0 and len(bullets) < bullet_capacity:
+                    # Wenn die Leertaste gedrückt wird und der Spieler nicht tot ist und auch wenn die maximale Anzahl an geschossener Kugeln nicht überschritten wurde,
+                    # schieße eine Kugel ab
                     rocket_active = False
+                    # Überprüfen, ob ein Raketen-Power-Up aktiv ist
                     for power_up in player.active_powerups:
                         if isinstance(power_up, Rocket) and power_up.active:
                             rocket_active = True
@@ -390,6 +410,7 @@ def gameLoop(startingState):
 
                     current_time = time.time()
                     if rocket_active and current_time - last_rocket_shot_time >= 1:
+                        # Wenn ein Raketen-Power-Up aktiv ist und die Zeit seit dem letzten Raketenabschuss größer als 1 Sekunde ist, schieße eine Rakete ab
                         bullets.append(
                             RocketBullet(player.x, player.y, player.dir, gameDisplay, display_width, display_height))
                         # Spiele den Raketen-Sound ab, wenn eine Rakete abgeschossen wird
@@ -413,7 +434,8 @@ def gameLoop(startingState):
                 if event.key == pygame.K_LEFT or event.key == pygame.K_RIGHT:
                     player.rtspd = 0
              
-            # Mousebutton clickable machen, und auch zeigen was dann passieren soll
+            # Wenn man im Pausenmenü oder im Game Over Menü landet,
+            # Wird der gameState je nach Button-Click geändert
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if gameState == "Paused" or gameState == "Game Over":
                     mouse_pos = pygame.mouse.get_pos()
@@ -424,11 +446,11 @@ def gameLoop(startingState):
                         buttons = draw_game_over_menu(score, high_score)
                     elif gameState == "Menu":
                         buttons = draw_menu_screen()
-                    # buttons = draw_pause_menu(score) if gameState == "Paused" else draw_game_over_menu(score, high_score)
                     for button in buttons:
                         if button["rect"].collidepoint(mouse_pos):
                             pygame.draw.rect(gameDisplay, (255, 255, 255), button["rect"], 2)
                             action = handle_button_click(button["text"], score)
+                            # Wenn ein Button angeklickt wurde, Führe eine entsprechende Aktion aus
                             if action == "Playing":
                                 gameState = "Playing"
                             elif action == "Restart":
@@ -440,16 +462,19 @@ def gameLoop(startingState):
                                 pygame.quit()
                                 quit()
 
+        # prüfe ob der Server eine Verbindung hat und ob Daten empfangen wurden
         if server and server.hasConnection:
             if server.received_data:
+                # Wenn die empfangenen Daten "move" enthalten, dann aktualisiere die Bewegung und die Rotation des Spielers
                 if server.received_data.__contains__("move"):
                     try:
-                        # Parse the received data from the controller
-                        control_data = json.loads(server.received_data)
+                        # Konvertiere das empfangene JSON in ein Python-Dictionary
+                        control_data = json.loads(server.received_data) 
                         move_data = control_data.get('move')
+                        # Lese die x und y Bewegung des Joysticks (ein float zwischen -1 und 1 in x und y richtung) aus den empfangenen Daten
                         move_x, move_y = move_data[0], move_data[1]
 
-                        # Calculate movement direction and thrust based on the joystick input
+                        # Berechne die Richtung des Spielers anhand der x und y Bewegung
                         if move_x != 0 or move_y != 0:
                             player.dir = math.degrees(math.atan2(move_y, move_x))
                             player.thrust = True
@@ -458,10 +483,12 @@ def gameLoop(startingState):
                         else:
                             player.thrust = False
 
-                        server.received_data = None
+                        server.received_data = None # Setze die empfangenen Daten auf None, um sie nicht erneut zu verarbeiten
                     except json.JSONDecodeError:
                         print("Error decoding JSON from remote controller")
+                # Wenn die empfangenen Daten "shoot" enthalten, schieße eine Kugel ab
                 elif server.received_data.__contains__('shoot'):
+                    # Überprüfen, ob ein Raketen-Power-Up aktiv ist
                     rocket_active = False
                     for power_up in player.active_powerups:
                         if isinstance(power_up, Rocket) and power_up.active:
@@ -470,6 +497,7 @@ def gameLoop(startingState):
 
                     current_time = time.time()
                     if rocket_active and current_time - last_rocket_shot_time >= 1:
+                        # Wenn ein Raketen-Power-Up aktiv ist und die Zeit seit dem letzten Raketenabschuss größer als 1 Sekunde ist, schieße eine Rakete ab
                         bullets.append(
                             RocketBullet(player.x, player.y, player.dir, gameDisplay, display_width, display_height))
                         # Spiele den Raketen-Sound ab, wenn eine Rakete abgeschossen wird
@@ -490,10 +518,10 @@ def gameLoop(startingState):
         elif hyperspace == 0:
             player_state = "Alive"
 
-        # Reset display
+        # Setze Bildschirm zurück
         gameDisplay.fill(black)
 
-        # Pause Menu zeichnen wenn paused
+        # Pause Menu zeichnen wenn Spiel pausiert
         if gameState == "Paused":
             draw_pause_menu(score)
             pygame.display.update()
@@ -529,18 +557,20 @@ def gameLoop(startingState):
             timer.tick(5)
             continue
         
-
+        # prüfe ob ein Powerup gespawnt ist und wenn ja, zeichne es
         for power_up in powerups:
             power_up.draw(gameDisplay)
-            if power_up.collides_with_player(player):  # Übergeben Sie das 'player'-Objekt
+            # Überprüfen, ob das Power-Up mit dem Spieler kollidiert
+            if power_up.collides_with_player(player): 
                 if not power_up.is_activated:  # Überprüfen Sie, ob das Power-Up bereits aktiviert wurde
                     power_up.activate()  # Aktivieren Sie das Power-Up
-                    Powerupactive.play()
+                    Powerupactive.play() # Spiele den Powerup-Sound ab
 
                     player.active_powerups.append(power_up)
 
                     print(player.active_powerups)
                     powerups.remove(power_up)
+
         for power_up in player.active_powerups.copy():  # Verwenden Sie .copy() um über eine Kopie der Liste zu iterieren
             power_up.update()  # Aktualisieren Sie den Zustand des Power-Ups
 
@@ -552,13 +582,14 @@ def gameLoop(startingState):
                 # Wenn das Schild aktiv ist, zeichnen Sie eine  Umrandung um den Spieler
                 pygame.draw.circle(gameDisplay, (173, 216, 250), (int(player.x), int(player.y)), player_size + 10, 2)
 
-        # Check for collision w/ asteroid
+        # Kollision des Spielers mit dem Asteroiden prüfen
         for a in asteroids:
             a.updateAsteroid()
             if player_state != "Died":
                 if isColliding(player.x, player.y, a.x, a.y, a.size):
                     # Überprüfen Sie, ob ein Schild-Powerup aktiv ist
                     shield_active = False
+                    # Überprüfen Sie, ob ein Schild-Powerup aktiv ist
                     for power_up in player.active_powerups:
                         print(f"Überprüfe Power-Up: {power_up.name}, Aktiv: {power_up.active}")  # Debug-Ausgabe
                         if isinstance(power_up, Shield) and power_up.active:
@@ -566,7 +597,7 @@ def gameLoop(startingState):
                             break
                     if not shield_active:
                         # Der Spieler stirbt nur, wenn kein Schild aktiv ist
-                        # Create ship fragments
+                        # Spieler Fragmente erstellen wenn tot
                         player_pieces.append(
                             DeadPlayer(player.x, player.y, 5 * player_size / (2 * math.cos(math.atan(1 / 3))),
                                        gameDisplay))
@@ -575,12 +606,13 @@ def gameLoop(startingState):
                                        gameDisplay))
                         player_pieces.append(DeadPlayer(player.x, player.y, player_size, gameDisplay))
 
-                        # Kill player
+                        # Spieler töten und zurücksetzen
                         player_state = "Died"
                         player_dying_delay = 30
                         player_invi_dur = 120
                         player.killPlayer()
 
+                        # Leben um eins verringern
                         if live != 0:
                             live -= 1
                         else:
@@ -619,14 +651,14 @@ def gameLoop(startingState):
             if f.x > display_width or f.x < 0 or f.y > display_height or f.y < 0:
                 player_pieces.remove(f)
 
-        # Check for end of stage
+        # Schauen ob man am ende eines Levels angekommen ist
         if len(asteroids) == 0 and saucer.state == "Dead":
             if next_level_delay < 30:
                 next_level_delay += 1
             else:
                 stage += 1
                 intensity = 0
-                # Spawn asteroid away of center
+                # Asteroiden um die Mitte herum spawnen
                 for i in range(stage):
                     xTo = display_width / 2
                     yTo = display_height / 2
@@ -636,10 +668,11 @@ def gameLoop(startingState):
                     asteroids.append(Asteroid(xTo, yTo, "Large", gameDisplay, display_width, display_height))
                 next_level_delay = 0
 
-        # Update intensity
+        # Schwierigkeitsgrad erhöhen
         if intensity < stage * 450:
             intensity += 1
 
+        # Totes Ufo neu spawnen
         if saucer.state == "Dead":
             if random.randint(0, 5000) <= (intensity * 3) / (stage * 10) and next_level_delay == 0:
                 saucer.createSaucer()
@@ -655,10 +688,12 @@ def gameLoop(startingState):
                     else:
                         saucer.type = "Large"
         else:
-            # Set saucer target dir
+            # Ufo Ausrichtung setzen
             if saucer.type == "Small":
+                # Wenn Ufo klein ist, dann ist die Genauigkeit 4 mal so hoch
                 acc = small_saucer_accuracy * 4 / stage
             else:
+                # Ansonsten ist die Genauigkeit nur 2 mal so hoch
                 acc = large_saucer_accuracy * 2 / stage
             saucer.bdir = math.degrees(
                 math.atan2(-saucer.y + player.y, -saucer.x + player.x) + math.radians(random.uniform(acc, -acc)))
@@ -671,13 +706,13 @@ def gameLoop(startingState):
             saucer.updateSaucer()
             saucer.drawSaucer()
 
-            # Check for collision w/ asteroid
+            # Kollision zwischen Asteroid und Ufo prüfen
             for a in asteroids:
                 if isCollidingSaucer(saucer.x, saucer.y, a.x, a.y, saucer.size/2, a.size/2):
-                    # Set saucer state
+                    # Ufo töten
                     saucer.state = "Dead"
 
-                    # Split asteroid
+                    # Asteroid teilen
                     if a.t == "Large":
                         asteroids.append(Asteroid(a.x, a.y, "Normal", gameDisplay, display_width, display_height))
                         asteroids.append(Asteroid(a.x, a.y, "Normal", gameDisplay, display_width, display_height))
@@ -694,18 +729,19 @@ def gameLoop(startingState):
                     asteroids.remove(a)
 
             for b in bullets:
+                # Killision zwischen Kugel und Ufo prüfen
                 if isColliding(b.x, b.y, saucer.x, saucer.y, saucer.size):
-                    # Add points
+                    # Score erhöhen wenn von Spieler Kugel getroffen
                     if saucer.type == "Large":
                         score += 200
                     else:
                         score += 1000
 
-                    # Set saucer state
+                    # Ufo töten
                     saucer.state = "Dead"
 
                     # Wählen Sie zufällig ein Power-Up aus
-                    power_up_type = random.choice(['Shield', 'Rocket'])  # Wählen Sie zufällig ein Power-Up aus
+                    power_up_type = random.choice(['Shield', 'Rocket'])
 
                     if power_up_type == 'Shield':
                         new_power_up = power_ups.Shield(saucer.x, saucer.y, 'Assets/Powerups/Shield.png')
@@ -717,7 +753,7 @@ def gameLoop(startingState):
                     # Play SFX
                     pygame.mixer.Sound.play(snd_bangL)
 
-                    # Remove bullet
+                    # Kugel entfernen und Partikel spawnen
                     bullets.remove(b)
                     for _ in range(10):
                         particle = Particle(b.x, b.y, gameDisplay, display_width, display_height)
@@ -738,14 +774,16 @@ def gameLoop(startingState):
                                 ExplosionBullet(b.x, b.y, angle, b.gameDisplay, b.display_width, b.display_height))
                         Explosion_bullets.extend(small_projectiles)  # Verwende die Liste explosion_bullets
 
-            # Check collision w/ player
+            # Kollision zwischen Ufo und Spieler prüfen
             if isColliding(saucer.x, saucer.y, player.x, player.y, saucer.size):
                 if player_state != "Died":
                     shield_active = False
+                    # Überprüfen Sie, ob ein Schild-Powerup aktiv ist, wenn ja dann passiert nichts
                     for power_up in player.active_powerups:
                         if isinstance(power_up, Shield) and power_up.active:
                             shield_active = True
                             break
+                    # Wenn kein Schild aktiv ist, dann stirbt der Spieler
                     if not shield_active:
                         player_pieces.append(
                             DeadPlayer(player.x, player.y, 5 * player_size / (2 * math.cos(math.atan(1 / 3))),
@@ -767,17 +805,17 @@ def gameLoop(startingState):
 
                         # Play SFX
                         pygame.mixer.Sound.play(snd_bangL)
-                    # Create ship fragments
+                    # Spieler Fragmente erstellen
                     else:
                         #der Spieler soll nicht sterben und der Colisionsound soll abgespielt werden
                         pygame.mixer.Sound.play(collision_sound)
 
-            # Saucer's bullets
+            # Ufo Kugeln event handling
             for b in saucer.bullets:
                 # Update bullets
                 b.updateBullet()
 
-                # Check for collision w/ asteroids
+                # Kollision zwischen Kugel und Asteroid prüfen
                 for a in asteroids:
                     if isColliding(b.x, b.y, a.x, a.y, a.size):
                         # Split asteroid
@@ -795,12 +833,12 @@ def gameLoop(startingState):
                             # Play SFX
                             pygame.mixer.Sound.play(snd_bangL)
 
-                        # Remove asteroid and bullet
+                        # Asteroid und Kugel entfernen
                         asteroids.remove(a)
                         saucer.bullets.remove(b)
-
                         break
 
+                # Kollision zwischen Ufo Kugel und Spieler prüfen
                 for b in saucer.bullets:
                     if isColliding(player.x, player.y, b.x, b.y, player.player_size):
                         if player_state != "Died":
@@ -811,7 +849,7 @@ def gameLoop(startingState):
                                     shield_active = True
                                     break
                             if not shield_active:
-                                # Create ship fragments
+                                # Spieler Fragmente erstellen
                                 player_pieces.append(
                                     DeadPlayer(player.x, player.y, 5 * player_size / (2 * math.cos(math.atan(1 / 3))),
                                                gameDisplay))
@@ -820,7 +858,7 @@ def gameLoop(startingState):
                                                gameDisplay))
                                 player_pieces.append(DeadPlayer(player.x, player.y, player_size, gameDisplay))
 
-                                # Kill player
+                                # Spieler zurücksetzen
                                 player_state = "Died"
                                 player_dying_delay = 30
                                 player_invi_dur = 120
@@ -844,7 +882,7 @@ def gameLoop(startingState):
                         except ValueError:
                             continue
 
-        # Bullets
+        # Kugeln event handling
         for b in bullets:
             # Update bullets
             b.updateBullet()
@@ -863,7 +901,7 @@ def gameLoop(startingState):
                 bullets.remove(b)
                 b = rocket_bullet
 
-            # Check for bullets collide w/ asteroid
+            # Kollision zwischen Kugel und Asteroid prüfen
             for a in asteroids:
                 if b.x > a.x - a.size and b.x < a.x + a.size and b.y > a.y - a.size and b.y < a.y + a.size:
                     # Split asteroid
@@ -907,7 +945,7 @@ def gameLoop(startingState):
 
                     break
 
-            # Destroying bullets
+            # Kugel entfernen und Partikel spawnen
             if b.life <= 0:
                 for _ in range(10):
                     particle = Particle(b.x, b.y, gameDisplay, display_width, display_height)
@@ -917,7 +955,8 @@ def gameLoop(startingState):
                 except ValueError:
                     continue
 
-        for particle in particles[:]:
+        # Partikel spawnen
+        for particle in particles:
             particle.update()
             if not particle.is_alive():
                 particles.remove(particle)
@@ -927,7 +966,7 @@ def gameLoop(startingState):
             # Update explosion bullets
             eb.updateBullet()
 
-            # Check for explosion bullets collide w/ asteroid
+            # Kolliosion zwischen Explosionskugel und Asteroid prüfen
             for a in asteroids:
                 if eb.x > a.x - a.size and eb.x < a.x + a.size and eb.y > a.y - a.size and eb.y < a.y + a.size:
                     # Split asteroid
@@ -951,14 +990,7 @@ def gameLoop(startingState):
                     if eb in Explosion_bullets:
                         Explosion_bullets.remove(eb)
 
-            # Destroying explosion bullets
-            if eb.life <= 0:
-                try:
-                    Explosion_bullets.remove(eb)
-                except ValueError:
-                    continue
-
-            # Destroying explosion bullets
+            # Explosionskugel entfernen
             if eb.life <= 0:
                 try:
                     Explosion_bullets.remove(eb)
@@ -975,7 +1007,7 @@ def gameLoop(startingState):
             playOneUpSFX -= 1
             pygame.mixer.Sound.play(snd_extra, 60)
 
-        # Draw player
+        # Spieler Animationen und State Handling abhängig davon ob der Spieler tot ist oder nicht
         if gameState != "Game Over":
             if player_state == "Died":
                 if hyperspace == 0:
@@ -1002,14 +1034,14 @@ def gameLoop(startingState):
         # Update screen
         pygame.display.update()
 
-        # Tick fps
+        # Tick fps während des Spiels
         clock.tick(30)
 
 
-# Start game
+# Starte Spiel im gamestate "Menu"
 gameLoop("Menu")
 
 # End game
-reset_high_score()  # Reset high score wenn script endet/ bei quit
+reset_high_score()  # Reset high score wenn script endet / bei quit
 pygame.quit()
 quit()
