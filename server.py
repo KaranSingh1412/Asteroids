@@ -71,5 +71,6 @@ class AsteroidsServer:
 
     def stop_server(self):
         self.running = False
+        print("Server stopped")
         if self.client_socket:
             self.client_socket.close()
