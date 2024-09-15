@@ -1,4 +1,4 @@
-# Asteroids 2.0
+# Spaceroids
 
 ## Beschreibung
 Asteroids ist ein klassisches Arcade-Spiel, bei dem der Spieler ein Raumschiff steuert und Asteroiden zerstören muss, um Punkte zu sammeln. Das Ziel des Spiels ist es, so viele Punkte wie möglich zu erzielen, indem man Asteroiden ausweicht und sie abschießt. **Asteroids 2.0** ist unsere Version des Spielklassikers mit einigen zusätzlichen Features wie Powerups, Design-Implementationen und mehr.
@@ -15,11 +15,10 @@ Asteroids ist ein klassisches Arcade-Spiel, bei dem der Spieler ein Raumschiff s
 
 1. Installieren Sie Python und Pygame auf Ihrem Computer.
 2. Installieren Sie PyCharm als Entwicklungsumgebung, falls es nicht vorhanden ist.
-3. Klone das Repository: `git clone https://github.com/dein-benutzername/asteroids.git`
-4. Öffnen Sie PyCharm und wählen Sie **Open** aus dem **File-Menü**. Navigieren Sie zum Verzeichnis, in das Sie das Repository geklont haben, und öffnen Sie es.
-5. Stellen Sie sicher, dass die erforderlichen Bibliotheken installiert sind. Öffnen Sie das Terminal in PyCharm und führen Sie den folgenden Befehl aus: `pip install -r requirements.txt`
-6. Öffnen Sie die Datei `main.py` in PyCharm.
-7. Führen Sie das Spiel aus, indem Sie auf das grüne Dreieck (Run-Button) oben rechts klicken oder `Shift + F10` drücken.
+3. Öffnen Sie PyCharm und wählen Sie **Open** aus dem **File-Menü*. Navigieren Sie zum Verzeichnis, in das Sie das Repository gepeichert haben, und wählen Sie es aus.
+4. Stellen Sie sicher, dass die erforderlichen Bibliotheken installiert sind. Öffnen Sie das Terminal in PyCharm und führen Sie den folgenden Befehl aus: `pip install -r requirements.txt`
+5. Öffnen Sie die Datei `main.py` in PyCharm.
+6. Führen Sie das Spiel aus, indem Sie auf das grüne Dreieck (Run-Button) oben rechts klicken oder `Shift + F10` drücken.
 
 ## Handysteuerung
 
