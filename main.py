@@ -1005,7 +1005,7 @@ def gameLoop(startingState):
         # Play sfx
         if playOneUpSFX > 0:
             playOneUpSFX -= 1
-            pygame.mixer.Sound.play(snd_extra, 60)
+            pygame.mixer.Sound.play(snd_extra)
 
         # Spieler Animationen und State Handling abhängig davon ob der Spieler tot ist oder nicht
         if gameState != "Game Over":
