@@ -67,9 +67,30 @@ ohne von ihnen getroffen zu werden. Sammle Punkte, um den Highscore zu schlagen.
 
 - **Entwickler**: Marcel Seibt, Konrad Kindermann, Karan Soni.
 - **Verwendete Bibliotheken**: Pygame
-- https://opengameart.org/content/brown-asteroid
-- https://sfxr.me/
-- https://fearless-design.itch.io/tiny-ships-free-spaceships
-- https://github.com/ixora-0/Asteroids
-- https://soundcloud.com/lowenergygirl/1-into-the-spaceship
-- https://lowenergygirl.itch.io/space-journey
+
+
+- -Code Quellen:
+Chat GPT
+Claude 3.5 Sonnet 
+Github Copilot
+ähnliches Github Repository: 
+Vinoth Pandian (2017), GitHub,  https://github.com/vinothpandian/Asteroids-Pygame 
+verwendetes Github Repository: 
+Hung Le aka “ixora-0” (GitHub Username) (2018), GitHub,
+	https://github.com/ixora-0/Asteroids
+
+Grafiken:
+
+Menü Hintergrundbild vom User “ahasanaraakter” (2018), Vecteezy, https://www.vecteezy.com/photo/24448956-space-wallpaper-banner-background-stunning-view-of-a-cosmic-galaxy-with-planets-and-space-objects-elements-of-this-image-furnished-by-nasa-generate-ai
+Fliegende Untertasse Sprite vom User “Pixelgedon” (2018, 11. Januar), Deviantart,
+	https://www.deviantart.com/pixelgedon/art/8Bit-Flying-Saucer-725060741
+Brown Asteroid Sprite vom User “FunwithPixels” (2017, 20. November), OpenGameArt,
+	https://opengameart.org/content/brown-asteroid
+Tiny Spaceship Sprite vom User “Fearless Design” (Herausgabe, Unbekannt), itch.io,
+	https://fearless-design.itch.io/tiny-ships-free-spaceships
+
+Sounds:
+
+Menümusik:vom User “lowenergygirl” (2022), Soundcloud, https://soundcloud.com/lowenergygirl/1-into-the-spaceship oder https://lowenergygirl.itch.io/space-journey 
+   Powerup Sounds: 
+          https://sfxr.me/
