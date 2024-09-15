@@ -2,8 +2,9 @@ import math
 import random
 import pygame
 
-# Create class for shattered ship
+# Eine Klasse für den toten Spieler bzw. die Fragmente des Spielers
 class DeadPlayer:
+    # Konstruktor der DeadPlayerklasse, empfängt (x, y, l, gameDisplay)
     def __init__(self, x, y, l, gameDisplay):
         self.angle = random.randrange(0, 360) * math.pi / 180
         self.dir = random.randrange(0, 360) * math.pi / 180
@@ -15,6 +16,7 @@ class DeadPlayer:
         self.gameDisplay = gameDisplay
         self.white = (255, 255, 255)
 
+    # Zeichnet den toten Spieler und seine Fragmente
     def updateDeadPlayer(self):
         pygame.draw.line(self.gameDisplay, self.white,
                          (self.x + self.lenght * math.cos(self.angle) / 2,
